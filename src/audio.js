@@ -1,4 +1,4 @@
-// audio.js — guarded sound effects with graceful degradation.
+﻿// audio.js â€” guarded sound effects with graceful degradation.
 //
 // This is one of the thin IO modules: it is the only place that touches the
 // Web Audio / HTMLAudioElement APIs. Gameplay logic never imports it for state;
@@ -26,7 +26,22 @@
 const SOUND_PATHS = {
   jump: 'assets/jump.wav',
   game_over: 'assets/game_over.wav',
+  score: 'assets/score.wav',
+  shield_break: 'assets/shield_break.wav',
+  battle_hit: 'assets/battle_hit.wav',
+  battle_hurt: 'assets/battle_hurt.wav',
+  heal: 'assets/heal.wav',
+  hover: 'assets/hover.wav',
+  purchase: 'assets/purchase.wav',
+  possession: 'assets/possession.wav',
+  victory: 'assets/victory.wav',
 };
+
+/** Path to the looping background music track (prompt §7). */
+const MUSIC_PATH = 'assets/music.mp3';
+
+/** Default music volume (manifest suggests a quiet 0.18). */
+const MUSIC_VOLUME = 0.18;
 
 /** Whether a user gesture has unlocked audio playback yet. */
 let unlocked = false;
@@ -92,6 +107,8 @@ function unlock() {
   for (const name of Object.keys(SOUND_PATHS)) {
     getElement(name);
   }
+  // If music was requested before the unlock gesture, start it now.
+  if (musicWanted) applyMusicState();
 }
 
 /**
@@ -157,6 +174,91 @@ export function playSfx(name) {
  */
 export function setMuted(value) {
   muted = Boolean(value);
+  // Reflect the new mute state onto music immediately (pause when muted, resume
+  // when unmuted if music is still wanted). SFX read muted per-call already.
+  applyMusicState();
+}
+
+// --- Background music (prompt §7) -------------------------------------------
+//
+// A single persistent looping HTMLAudio instance. It must only ever play after
+// a user gesture (autoplay policy), honor mute, survive a restart without
+// stacking tracks, and degrade gracefully when the API or file is unavailable.
+
+/**
+ * Lazily construct the single looping music element. Guarded: returns null in a
+ * non-browser context or if construction fails.
+ * @returns {HTMLAudioElement|null}
+ */
+function getMusicElement() {
+  if (musicEl) return musicEl;
+  if (!audioAvailable()) return null;
+  try {
+    const el = new window.Audio(MUSIC_PATH);
+    el.loop = true;
+    el.preload = 'auto';
+    el.volume = MUSIC_VOLUME;
+    el.addEventListener('error', () => {
+      // A failed music load must never interrupt the game; drop the element so
+      // we stop trying to control a broken track.
+      musicEl = null;
+    });
+    musicEl = el;
+    return el;
+  } catch {
+    musicEl = null;
+    return null;
+  }
+}
+
+/**
+ * Reconcile the music element with the desired state: play the single looping
+ * track iff music is wanted, audio is unlocked, and not muted; otherwise pause
+ * it. Idempotent, fully guarded, and never throws (autoplay rejection and any
+ * play() error are swallowed), so music can never interrupt a run.
+ * @returns {void}
+ */
+function applyMusicState() {
+  try {
+    if (!audioAvailable()) return;
+    const shouldPlay = musicWanted && unlocked && !muted;
+    const el = shouldPlay ? getMusicElement() : musicEl;
+    if (!el) return;
+    if (shouldPlay) {
+      const result = el.play();
+      if (result && typeof result.catch === 'function') result.catch(() => {});
+    } else {
+      try { el.pause(); } catch { /* ignore */ }
+    }
+  } catch {
+    // Never let music control interrupt the game.
+  }
+}
+
+/**
+ * Request that the looping background music play. Takes effect once audio is
+ * unlocked by a user gesture and while not muted. Safe to call repeatedly; it
+ * never stacks tracks because there is exactly one music element (prompt §7).
+ * @returns {void}
+ */
+export function startMusic() {
+  musicWanted = true;
+  applyMusicState();
+}
+
+/**
+ * Stop the background music (e.g. leaving to a screen with no music). Keeps the
+ * single element so a later startMusic resumes the same track without stacking.
+ * @returns {void}
+ */
+export function stopMusic() {
+  musicWanted = false;
+  applyMusicState();
+}
+
+/** @returns {boolean} whether music is currently wanted. */
+export function isMusicWanted() {
+  return musicWanted;
 }
 
 /**
@@ -196,4 +298,7 @@ export function initAudio(prefs) {
   attachUnlockListeners();
 }
 
-export default { playSfx, setMuted, isMuted, isUnlocked, applyPrefs, initAudio };
+export default { playSfx, setMuted, isMuted, isUnlocked, applyPrefs, initAudio, startMusic, stopMusic, isMusicWanted };
+
+
+
