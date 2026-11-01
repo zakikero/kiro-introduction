@@ -1,347 +1,400 @@
-﻿// ui/overlay.js — the vanilla-DOM interactive menu overlay (prompt §2, §4).
-//
-// The Canvas keeps drawing the world and the artwork; this module adds a THIN
-// DOM layer of REAL, state-scoped HTML buttons over the game wrapper so menu
-// choices are actually clickable and keyboard-operable — no framework, no
-// decorative canvas text that does nothing. It owns no gameplay state and never
-// mutates a RunState: every control calls an injected action callback that
-// routes to the FSM / pure save+wardrobe functions.
-//
-// Panels, shown only in their matching FSM state:
-//   - Main Menu: Start Adventure / Wardrobe / How to Play, high score, Candy,
-//     equipped Ghosty, plus a Progress section (Export / Import, Mute,
-//     Reduced motion, Fullscreen).
-//   - Results: Restart / Main Menu / Wardrobe.
-//   - Pause: Resume / End Run.
-//   - Wardrobe: five selectable cards (select -> preview only), Buy, Equip,
-//     Back, live Candy + equipped label.
-//
-// Accessibility (prompt §4): native <button>s (keyboard-activatable), a visible
-// focus ring (index.html), text/icon labels in addition to color, disabled
-// controls with an adjacent reason. The overlay stops its own key events from
-// reaching the global flight handler so activating a button never also flaps.
-//
-// Headless-safe: constructing/using this module in a non-browser context is a
-// no-op (guarded on `document`).
-
+// State-scoped HTML controls. Nodes stay mounted so animation-frame updates
+// cannot remove a pressed/focused button between pointerdown and click.
 import { States } from "../state.js";
-import { hatCatalog, HAT_NAMES, hatMessage } from "./wardrobe.js";
+import { hatCatalog, HAT_NAMES } from "./wardrobe.js";
+import { shopRows, canUsePotion } from "./shop.js";
+import { PLAYER_SPRITES } from "../appearance.js";
+import { drawGhostyPreview } from "../render.js";
 
-/** Build an element with props/children; a tiny helper to keep code terse. */
 function el(tag, props = {}, children = []) {
-  if (typeof document === "undefined") return null;
   const node = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (k === "class") node.className = v;
-    else if (k === "text") node.textContent = v;
-    else if (k === "html") node.innerHTML = v;
-    else if (k.startsWith("on") && typeof v === "function") {
-      node.addEventListener(k.slice(2).toLowerCase(), v);
-    } else if (v != null) {
-      node.setAttribute(k, String(v));
-    }
+  for (const [key, value] of Object.entries(props)) {
+    if (key === "class") node.className = value;
+    else if (key === "text") node.textContent = value;
+    else if (key.startsWith("on") && typeof value === "function") {
+      node.addEventListener(key.slice(2).toLowerCase(), value);
+    } else if (value != null) node.setAttribute(key, String(value));
   }
-  for (const c of [].concat(children)) {
-    if (c == null) continue;
-    node.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+  for (const child of [].concat(children)) {
+    if (child != null) node.appendChild(typeof child === "string" ? document.createTextNode(child) : child);
   }
   return node;
 }
 
-/**
- * Create the overlay controller.
- *
- * @param {object} opts
- * @param {HTMLElement} opts.root the wrapper element the overlay is attached to
- * @param {object} opts.fsm the FSM (read `state`, call control methods)
- * @param {() => object} opts.getSave returns the live SaveData
- * @param {object} opts.config the frozen CONFIG
- * @param {object} opts.actions injected action callbacks:
- *   startRun, openWardrobe, leaveWardrobe, buyHat(id), equipHat(id),
- *   resume, endRun, restart, toMainMenu, exportProgress, importProgress(file),
- *   setMuted(bool), setReducedMotion(bool), toggleFullscreen
- * @returns {{ sync: () => void, destroy: () => void, getWardrobeSelection: () => string }}
- */
+const STATE_PANEL = {
+  [States.Main_Menu_State]: "menu",
+  [States.Results_State]: "results",
+  [States.Pause_State]: "pause",
+  [States.Wardrobe]: "wardrobe",
+  [States.Shop_State]: "shop",
+};
+
 export function createOverlay(opts) {
   if (typeof document === "undefined" || !opts || !opts.root) {
-    return { sync() {}, destroy() {}, getWardrobeSelection: () => "none" };
+    return {
+      sync() {}, destroy() {}, selectByIndex() {}, selectShopByIndex() {},
+      isActive: () => false, getWardrobeSelection: () => "none",
+      setWardrobeMessage() {},
+    };
   }
   const { root, fsm, getSave, config, actions } = opts;
-
-  // Wardrobe PREVIEW selection — separate from the equipped hat. Selecting a
-  // card only changes this (prompt §2 interaction contract rule 1).
   let wardrobeSelection = "none";
   let wardrobeMessage = "";
-
-  // The overlay container sits above the canvas; pointer events pass through
-  // empty areas to the canvas (so flight clicks still work) but land on panels.
-  const container = el("div", { class: "kiro-overlay", "aria-live": "polite" });
+  let shopSelection = null;
+  let shopMessage = "";
+  let lastShown = null;
+  const panels = {};
+  const container = el("div", { class: "kiro-overlay", hidden: "hidden" });
   root.appendChild(container);
 
-  // Each panel is built once and shown/hidden by state.
-  const panels = {};
+  function invoke(name, ...args) {
+    if (typeof actions[name] !== "function") return false;
+    const result = actions[name](...args);
+    sync();
+    return result;
+  }
+  function button(label, action, primary = false) {
+    return el("button", {
+      class: "kiro-btn" + (primary ? " kiro-primary" : ""),
+      type: "button", onclick: action,
+    }, label);
+  }
 
-  // --- Main Menu panel ------------------------------------------------------
+  const howTo = el("div", { class: "kiro-howto", id: "kiro-howto", hidden: "hidden" }, [
+    el("p", { text: "Space or click the playfield to flap. E uses an available spirit flight power." }),
+    el("p", { text: "P or Escape pauses. Q while paused ends the run." }),
+    el("p", { text: "In battle: 1 Attack, 2 Defend, 3 Item, 4 Spirit. Choose optional encounters and reach the Final Boss." }),
+  ]);
+  const howToButton = button("How to Play", () => {
+    howTo.hidden = !howTo.hidden;
+    howToButton.setAttribute("aria-expanded", String(!howTo.hidden));
+  });
+  howToButton.setAttribute("aria-controls", "kiro-howto");
+  howToButton.setAttribute("aria-expanded", "false");
+  const muteCb = el("input", { type: "checkbox", id: "kiro-mute" });
+  muteCb.addEventListener("change", () => invoke("setMuted", Boolean(muteCb.checked)));
+  const motionCb = el("input", { type: "checkbox", id: "kiro-motion" });
+  motionCb.addEventListener("change", () => invoke("setReducedMotion", Boolean(motionCb.checked)));
+  const fileInput = el("input", { type: "file", accept: "application/json,.json", hidden: "hidden" });
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (file) invoke("importProgress", file);
+    fileInput.value = "";
+  });
   const menuStats = el("p", { class: "kiro-stats" });
-  const menuMsg = el("p", { class: "kiro-msg", role: "status" });
+  const menuMessage = el("p", { class: "kiro-msg", role: "status" });
+  const start = button("Start Adventure", () => {
+    if (fsm.state === States.Main_Menu_State) invoke("startRun");
+  }, true);
+  start.setAttribute("data-first", "1");
   panels.menu = el("div", { class: "kiro-panel kiro-menu", role: "dialog", "aria-label": "Main menu" }, [
-    el("h2", { text: "Kiro's Haunted Flight" }),
-    menuStats,
+    el("h2", { text: "Kiro's Haunted Flight" }), menuStats,
     el("div", { class: "kiro-actions" }, [
-      el("button", { class: "kiro-btn kiro-primary", type: "button", "data-first": "1", onclick: () => actions.startRun() }, "Start Adventure"),
-      el("button", { class: "kiro-btn", type: "button", onclick: () => actions.openWardrobe() }, "Wardrobe"),
-      el("button", { class: "kiro-btn", type: "button", onclick: () => toggleHowTo() }, "How to Play"),
+      start, button("Wardrobe", () => invoke("openWardrobe")), howToButton,
     ]),
-    buildHowTo(),
-    buildProgressSection(),
-    menuMsg,
+    howTo,
+    el("div", { class: "kiro-progress" }, [
+      el("h3", { text: "Progress & Settings" }),
+      el("div", { class: "kiro-settings-row" }, [
+        el("label", {}, [muteCb, el("span", { text: "Mute audio" })]),
+        el("label", {}, [motionCb, el("span", { text: "Reduced motion" })]),
+      ]),
+      el("div", { class: "kiro-settings-row" }, [
+        button("Export Save", () => invoke("exportProgress")),
+        button("Import Save", () => fileInput.click()),
+        button("Fullscreen", () => invoke("toggleFullscreen")), fileInput,
+      ]),
+    ]), menuMessage,
   ]);
 
-  // --- Results panel --------------------------------------------------------
+  const resultsTitle = el("h2", { text: "Results" });
   const resultsStats = el("p", { class: "kiro-stats" });
   panels.results = el("div", { class: "kiro-panel kiro-results", role: "dialog", "aria-label": "Run results" }, [
-    el("h2", { class: "kiro-results-title", text: "Results" }),
-    resultsStats,
+    resultsTitle, resultsStats,
     el("div", { class: "kiro-actions" }, [
-      el("button", { class: "kiro-btn kiro-primary", type: "button", "data-first": "1", onclick: () => actions.restart() }, "Restart"),
-      el("button", { class: "kiro-btn", type: "button", onclick: () => actions.toMainMenu() }, "Main Menu"),
-      el("button", { class: "kiro-btn", type: "button", onclick: () => actions.openWardrobe() }, "Wardrobe"),
+      button("Restart", () => invoke("restart"), true),
+      button("Main Menu", () => invoke("toMainMenu")),
+      button("Wardrobe", () => invoke("openWardrobe")),
     ]),
   ]);
-
-  // --- Pause panel ----------------------------------------------------------
   panels.pause = el("div", { class: "kiro-panel kiro-pause", role: "dialog", "aria-label": "Paused" }, [
     el("h2", { text: "Paused" }),
     el("div", { class: "kiro-actions" }, [
-      el("button", { class: "kiro-btn kiro-primary", type: "button", "data-first": "1", onclick: () => actions.resume() }, "Resume"),
-      el("button", { class: "kiro-btn kiro-danger", type: "button", onclick: () => actions.endRun() }, "End Run"),
+      button("Resume", () => invoke("resume"), true),
+      button("End Run", () => invoke("endRun")),
     ]),
   ]);
 
-  // --- Wardrobe panel -------------------------------------------------------
+  // The preview has its own canvas beside the choices; it is never painted
+  // behind the controls on the world canvas.
   const wardrobeCandy = el("p", { class: "kiro-stats" });
-  const wardrobeCards = el("div", { class: "kiro-cards", role: "list" });
-  const wardrobeActions = el("div", { class: "kiro-actions" });
-  const wardrobeMsgEl = el("p", { class: "kiro-msg", role: "status" });
+  const previewCanvas = el("canvas", {
+    class: "kiro-preview", id: "kiro-wardrobe-preview", width: "320", height: "360",
+    "aria-label": "Preview of the selected hat on Ghosty",
+  });
+  const previewName = el("h3");
+  const previewStatus = el("p", { class: "kiro-preview-status" });
+  const wardrobeCards = el("div", { class: "kiro-cards", role: "group", "aria-label": "Hat choices" });
+  const wardrobeMessageEl = el("p", { class: "kiro-msg", role: "status" });
+  const wardrobeReason = el("p", { class: "kiro-reason" });
+  const equippedNotice = el("span", { class: "kiro-equipped-note", text: "Equipped" });
+  const wardrobeCardNodes = new Map();
+
+  const buyHatButton = button("Buy", () => {
+    if (fsm.state !== States.Wardrobe) return;
+    const row = hatCatalog(getSave(), config).find((item) => item.id === wardrobeSelection);
+    if (!row || !row.buyable) return;
+    const ok = actions.buyHat(row.id);
+    wardrobeMessage = ok ? "Bought " + row.name + ". Choose Equip to wear it." : "Could not buy this hat.";
+    sync();
+    if (ok) equipHatButton.focus();
+  }, true);
+  const equipHatButton = button("Equip", () => {
+    if (fsm.state !== States.Wardrobe) return;
+    const row = hatCatalog(getSave(), config).find((item) => item.id === wardrobeSelection);
+    if (!row || !row.owned || row.equipped) return;
+    const ok = actions.equipHat(row.id);
+    wardrobeMessage = ok ? "Equipped " + row.name + "." : "Could not equip this hat.";
+    sync();
+    if (ok) wardrobeCardNodes.get(row.id).card.focus();
+  }, true);
   panels.wardrobe = el("div", { class: "kiro-panel kiro-wardrobe", role: "dialog", "aria-label": "Wardrobe" }, [
-    el("h2", { text: "Wardrobe" }),
-    wardrobeCandy,
-    wardrobeCards,
-    wardrobeActions,
-    wardrobeMsgEl,
+    el("h2", { text: "Wardrobe" }), wardrobeCandy,
+    el("div", { class: "kiro-wardrobe-layout" }, [
+      el("aside", { class: "kiro-preview-wrap" }, [
+        previewCanvas, previewName, previewStatus,
+        el("p", { class: "kiro-preview-hint", text: "Selecting previews a look. Buy unlocks it; Equip puts it on." }),
+      ]),
+      el("div", { class: "kiro-wardrobe-options" }, [
+        wardrobeCards, wardrobeReason,
+        el("div", { class: "kiro-actions" }, [
+          buyHatButton, equipHatButton, equippedNotice,
+          button("Back to Menu", () => invoke("leaveWardrobe")),
+        ]), wardrobeMessageEl,
+      ]),
+    ]),
   ]);
 
-  for (const key of Object.keys(panels)) container.appendChild(panels[key]);
-
-  // --- How to Play (collapsible) -------------------------------------------
-  function buildHowTo() {
-    const box = el("div", { class: "kiro-howto", hidden: "hidden" }, [
-      el("p", { text: "Space or click the playfield to flap." }),
-      el("p", { text: "E or the on-screen button for your spirit's flight power." }),
-      el("p", { text: "P to pause. In battle, use the numbered actions." }),
-      el("p", { text: "Fly past pipes, choose optional battles, reach the Final Boss." }),
-    ]);
-    panels._howto = box;
-    return box;
-  }
-  function toggleHowTo() {
-    if (!panels._howto) return;
-    panels._howto.hidden = !panels._howto.hidden;
-  }
-
-  // --- Progress section (export/import + prefs + fullscreen) ----------------
-  function buildProgressSection() {
-    const muteCb = el("input", { type: "checkbox", id: "kiro-mute" });
-    muteCb.addEventListener("change", () => actions.setMuted(Boolean(muteCb.checked)));
-    const motionCb = el("input", { type: "checkbox", id: "kiro-motion" });
-    motionCb.addEventListener("change", () => actions.setReducedMotion(Boolean(motionCb.checked)));
-    const fileInput = el("input", { type: "file", accept: "application/json,.json", id: "kiro-import", hidden: "hidden" });
-    fileInput.addEventListener("change", () => {
-      const f = fileInput.files && fileInput.files[0];
-      if (f) actions.importProgress(f);
-      fileInput.value = "";
-    });
-    panels._muteCb = muteCb;
-    panels._motionCb = motionCb;
-
-    return el("div", { class: "kiro-progress" }, [
-      el("h3", { text: "Progress & Settings" }),
-      el("div", { class: "kiro-settings-row" }, [
-        el("label", {}, [muteCb, el("span", { text: " Mute audio" })]),
-        el("label", {}, [motionCb, el("span", { text: " Reduced motion" })]),
-      ]),
-      el("div", { class: "kiro-settings-row" }, [
-        el("button", { class: "kiro-btn kiro-small", type: "button", onclick: () => actions.exportProgress() }, "Export Save"),
-        el("button", { class: "kiro-btn kiro-small", type: "button", onclick: () => fileInput.click() }, "Import Save"),
-        el("button", { class: "kiro-btn kiro-small", type: "button", onclick: () => actions.toggleFullscreen() }, "Fullscreen"),
-        fileInput,
-      ]),
-    ]);
-  }
-
-  // --- Wardrobe card rendering ---------------------------------------------
   function renderWardrobe() {
     const save = getSave();
     const rows = hatCatalog(save, config);
-    // Keep selection valid.
-    if (!rows.some((r) => r.id === wardrobeSelection)) wardrobeSelection = "none";
-
-    wardrobeCandy.textContent = `Candy: ${save.candy}  ·  Equipped: ${HAT_NAMES[save.equippedHat] || save.equippedHat}`;
-
-    // Cards.
-    wardrobeCards.textContent = "";
-    rows.forEach((row, i) => {
-      const selected = row.id === wardrobeSelection;
-      let status = row.equipped ? "Equipped" : row.owned ? "Owned" : row.free ? "Free" : `${row.price} Candy`;
-      const card = el("button", {
-        class: "kiro-card" + (selected ? " kiro-selected" : "") + (row.equipped ? " kiro-equipped" : ""),
-        type: "button",
-        role: "listitem",
-        "aria-pressed": selected ? "true" : "false",
-        "data-hat": row.id,
-        onclick: () => { wardrobeSelection = row.id; wardrobeMessage = ""; renderWardrobe(); },
-      }, [
-        el("span", { class: "kiro-card-name", text: `${i + 1}. ${row.name}` }),
-        el("span", { class: "kiro-card-status", text: status }),
-      ]);
-      wardrobeCards.appendChild(card);
-    });
-
-    // Contextual Buy / Equip / Back actions for the SELECTED card.
-    wardrobeActions.textContent = "";
-    const sel = rows.find((r) => r.id === wardrobeSelection) || rows[0];
-    const candy = save.candy || 0;
-    if (!sel.owned && !sel.free) {
-      const need = Math.max(0, sel.price - candy);
-      const buyBtn = el("button", {
-        class: "kiro-btn kiro-primary",
-        type: "button",
-        onclick: () => {
-          const ok = actions.buyHat(sel.id);
-          wardrobeMessage = ok ? `Bought ${sel.name}.` : hatMessage("unaffordable");
-          renderWardrobe();
-        },
-      }, `Buy for ${sel.price} Candy`);
-      if (need > 0) {
-        buyBtn.disabled = true;
-        buyBtn.title = `Need ${need} more Candy`;
+    if (!rows.some((row) => row.id === wardrobeSelection)) wardrobeSelection = "none";
+    wardrobeCandy.textContent = "Candy: " + save.candy + " | Equipped: " + (HAT_NAMES[save.equippedHat] || save.equippedHat);
+    rows.forEach((row, index) => {
+      let nodes = wardrobeCardNodes.get(row.id);
+      if (!nodes) {
+        const name = el("span", { class: "kiro-card-name" });
+        const status = el("span", { class: "kiro-card-status" });
+        const image = el("img", { class: "kiro-card-art", src: "assets/" + PLAYER_SPRITES[row.id], alt: "", loading: "lazy" });
+        image.addEventListener("error", () => { image.hidden = true; });
+        const card = el("button", {
+          class: "kiro-card", type: "button", "data-hat": row.id,
+          onclick: () => {
+            if (fsm.state !== States.Wardrobe) return;
+            wardrobeSelection = row.id;
+            wardrobeMessage = "";
+            renderWardrobe();
+          },
+        }, [image, name, status]);
+        nodes = { card, name, status };
+        wardrobeCardNodes.set(row.id, nodes);
+        wardrobeCards.appendChild(card);
       }
-      wardrobeActions.appendChild(buyBtn);
-      if (need > 0) wardrobeActions.appendChild(el("span", { class: "kiro-reason", text: `Need ${need} more Candy` }));
-    } else if (sel.owned && !sel.equipped) {
-      wardrobeActions.appendChild(el("button", {
-        class: "kiro-btn kiro-primary",
-        type: "button",
-        onclick: () => {
-          const ok = actions.equipHat(sel.id);
-          wardrobeMessage = ok ? `Equipped ${sel.name}.` : "";
-          renderWardrobe();
-        },
-      }, sel.free ? "Equip (remove hat)" : "Equip"));
-    } else if (sel.equipped) {
-      wardrobeActions.appendChild(el("span", { class: "kiro-reason", text: "Already equipped" }));
-    }
-    wardrobeActions.appendChild(el("button", {
-      class: "kiro-btn", type: "button", "data-first": "1",
-      onclick: () => actions.leaveWardrobe(),
-    }, "Back to Menu"));
-
-    wardrobeMsgEl.textContent = wardrobeMessage;
+      const selected = row.id === wardrobeSelection;
+      nodes.card.classList.toggle("kiro-selected", selected);
+      nodes.card.classList.toggle("kiro-equipped", row.equipped);
+      nodes.card.setAttribute("aria-pressed", String(selected));
+      nodes.name.textContent = (index + 1) + ". " + row.name;
+      nodes.status.textContent = row.equipped ? "Equipped" : row.owned ? "Owned" : row.price + " Candy";
+    });
+    const selected = rows.find((row) => row.id === wardrobeSelection);
+    const need = Math.max(0, selected.price - save.candy);
+    buyHatButton.hidden = selected.owned;
+    buyHatButton.disabled = !selected.buyable;
+    buyHatButton.textContent = "Buy for " + selected.price + " Candy";
+    equipHatButton.hidden = !selected.owned || selected.equipped;
+    equipHatButton.textContent = selected.free ? "Equip (remove hat)" : "Equip";
+    equippedNotice.hidden = !selected.equipped;
+    wardrobeReason.textContent = !selected.owned && need > 0 ? "Need " + need + " more Candy" : "";
+    previewName.textContent = selected.name;
+    previewStatus.textContent = selected.equipped ? "Currently equipped" : "Preview only";
+    wardrobeMessageEl.textContent = wardrobeMessage;
   }
 
-  // --- Visibility sync ------------------------------------------------------
-  const STATE_PANEL = {
-    [States.Main_Menu_State]: "menu",
-    [States.Results_State]: "results",
-    [States.Pause_State]: "pause",
-    [States.Wardrobe]: "wardrobe",
-  };
+  function paintPreview() {
+    try {
+      const ctx = previewCanvas.getContext("2d");
+      if (!ctx) return;
+      ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+      drawGhostyPreview(ctx, previewCanvas.width / 2, 230, 110, wardrobeSelection, null);
+    } catch { /* A missing canvas must not prevent menu interaction. */ }
+  }
 
-  let lastShown = null;
+  const shopCoins = el("p", { class: "kiro-stats" });
+  const shopCards = el("div", { class: "kiro-cards", role: "group", "aria-label": "Shop items" });
+  const shopReason = el("p", { class: "kiro-reason" });
+  const shopMessageEl = el("p", { class: "kiro-msg", role: "status" });
+  const shopCardNodes = new Map();
+  const buyItemButton = button("Buy", () => {
+    if (fsm.state !== States.Shop_State || !fsm.runState) return;
+    const row = shopRows(fsm.runState, config).find((item) => item.id === shopSelection);
+    if (!row || !row.buyable) return;
+    const ok = actions.buyItem(row.id);
+    shopMessage = ok ? "Bought " + row.effectText + "." : "Could not buy this item.";
+    sync();
+  }, true);
+  const usePotionButton = button("Use Potion", () => {
+    if (fsm.state !== States.Shop_State || !canUsePotion(fsm.runState)) return;
+    const ok = actions.usePotion();
+    shopMessage = ok ? "Used a potion." : "Could not use a potion.";
+    sync();
+  });
+  panels.shop = el("div", { class: "kiro-panel kiro-shop", role: "dialog", "aria-label": "Haunted shop" }, [
+    el("h2", { text: "Haunted Shop" }), shopCoins, shopCards, shopReason,
+    el("div", { class: "kiro-actions" }, [
+      buyItemButton, usePotionButton, button("Leave Shop", () => invoke("leaveShop")),
+    ]), shopMessageEl,
+  ]);
 
-  /** Reflect the current FSM state + save into the overlay (call once/frame). */
+  function renderShop() {
+    const run = fsm.runState;
+    if (!run) return;
+    const rows = shopRows(run, config);
+    if (!rows.some((row) => row.id === shopSelection)) shopSelection = rows[0] && rows[0].id;
+    shopCoins.textContent = "Soul Coins: " + run.soulCoins + " | Battle HP: " + Math.round(run.battleHp) + "/" + run.maxBattleHp + " | Potions: " + (run.items.potion || 0);
+    rows.forEach((row, index) => {
+      let nodes = shopCardNodes.get(row.id);
+      if (!nodes) {
+        const name = el("span", { class: "kiro-card-name" });
+        const status = el("span", { class: "kiro-card-status" });
+        const card = el("button", {
+          class: "kiro-card", type: "button", "data-item": row.id,
+          onclick: () => {
+            if (fsm.state !== States.Shop_State) return;
+            shopSelection = row.id;
+            shopMessage = "";
+            renderShop();
+          },
+        }, [name, status]);
+        nodes = { card, name, status };
+        shopCardNodes.set(row.id, nodes);
+        shopCards.appendChild(card);
+      }
+      const selected = row.id === shopSelection;
+      nodes.card.classList.toggle("kiro-selected", selected);
+      nodes.card.setAttribute("aria-pressed", String(selected));
+      nodes.name.textContent = (index + 1) + ". " + row.effectText;
+      nodes.status.textContent = row.price + " SC | Owned " + row.owned + (row.atCap ? " | At limit" : "");
+    });
+    const selected = rows.find((row) => row.id === shopSelection);
+    buyItemButton.disabled = !selected || !selected.buyable;
+    buyItemButton.textContent = selected ? "Buy (" + selected.price + " SC)" : "Buy";
+    shopReason.textContent = !selected || selected.buyable ? "" : selected.atCap ? "Already at the limit this run" : "Not enough Soul Coins";
+    usePotionButton.disabled = !canUsePotion(run);
+    usePotionButton.title = usePotionButton.disabled ? run.items.potion > 0 ? "Already at full Battle HP" : "No potion owned" : "Restore Battle HP (U)";
+    shopMessageEl.textContent = shopMessage;
+  }
+
+  // Only actual screen panels belong here. Re-appending nested help/settings
+  // would detach them from the menu and leave them visible during gameplay.
+  for (const panel of Object.values(panels)) {
+    panel.hidden = true;
+    container.appendChild(panel);
+  }
+
   function sync() {
     const active = STATE_PANEL[fsm.state] || null;
-
-    for (const key of Object.keys(panels)) {
-      if (key.startsWith("_")) continue;
-      panels[key].hidden = key !== active;
+    const entering = active !== lastShown;
+    if (entering) {
+      howTo.hidden = true;
+      howToButton.setAttribute("aria-expanded", "false");
+      if (active === "wardrobe") {
+        wardrobeSelection = getSave().equippedHat || "none";
+        wardrobeMessage = "";
+      }
+      if (active === "shop") { shopSelection = null; shopMessage = ""; }
     }
-    // The overlay container only intercepts pointer events when a panel is up,
-    // so empty-space clicks still reach the canvas during flight.
+    for (const [name, panel] of Object.entries(panels)) panel.hidden = name !== active;
+    container.hidden = !active;
     container.classList.toggle("kiro-active", Boolean(active));
 
-    if (!active) { lastShown = null; return; }
-
-    const save = getSave();
     if (active === "menu") {
-      menuStats.textContent =
-        `High Score: ${save.highScore}   ·   Candy: ${save.candy}   ·   Hat: ${HAT_NAMES[save.equippedHat] || save.equippedHat}`;
-      if (panels._muteCb) panels._muteCb.checked = Boolean(save.prefs && save.prefs.muted);
-      if (panels._motionCb) panels._motionCb.checked = Boolean(save.prefs && save.prefs.reducedMotion);
+      const save = getSave();
+      menuStats.textContent = "High Score: " + save.highScore + " | Candy: " + save.candy + " | Hat: " + (HAT_NAMES[save.equippedHat] || save.equippedHat);
+      muteCb.checked = Boolean(save.prefs && save.prefs.muted);
+      motionCb.checked = Boolean(save.prefs && save.prefs.reducedMotion);
     } else if (active === "results") {
-      panels.results.querySelector(".kiro-results-title").textContent =
-        save.__lastOutcome === "victory" ? "Victory!" : "Results";
+      const save = getSave();
+      resultsTitle.textContent = save.__lastOutcome === "victory" ? "Victory!" : "Results";
       resultsStats.textContent = save.__resultsLine || "";
     } else if (active === "wardrobe") {
       renderWardrobe();
-    }
+      paintPreview();
+    } else if (active === "shop") renderShop();
 
-    // Move focus to the first control when a NEW panel appears (prompt §4).
-    if (active !== lastShown) {
-      const first = panels[active].querySelector('[data-first="1"], .kiro-btn, button');
-      if (first && typeof first.focus === "function") {
-        try { first.focus(); } catch { /* ignore */ }
+    if (entering) {
+      const target = active === "wardrobe"
+        ? wardrobeCardNodes.get(wardrobeSelection)?.card
+        : active ? panels[active].querySelector("button") : root.querySelector("#game-canvas");
+      if (target && typeof target.focus === "function") {
+        try { target.focus({ preventScroll: true }); } catch { target.focus(); }
       }
     }
     lastShown = active;
   }
 
-  // Keep overlay key activity from leaking into the global flight handler: a
-  // Space/Enter on a focused button activates the button only (prompt §4).
-  function onKeydown(ev) {
-    if (!container.classList.contains("kiro-active")) return;
-    const t = ev.target;
-    const isControl = t && (t.tagName === "BUTTON" || t.tagName === "INPUT" || t.tagName === "LABEL");
-    if (isControl && (ev.code === "Space" || ev.code === "Enter")) {
-      ev.stopPropagation();
+  function onKeydown(event) {
+    if (!STATE_PANEL[fsm.state]) return;
+    const target = event.target;
+    const nativeControl = target && ["BUTTON", "INPUT", "LABEL"].includes(target.tagName);
+    if (nativeControl && (event.code === "Space" || event.code === "Enter")) {
+      event.stopPropagation();
+      if (event.repeat) event.preventDefault();
     }
-    if (ev.code === "Escape") {
-      ev.stopPropagation();
-      if (fsm.state === States.Wardrobe) actions.leaveWardrobe();
+    if (event.code === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      if (fsm.state === States.Wardrobe) invoke("leaveWardrobe");
+      else if (fsm.state === States.Shop_State) invoke("leaveShop");
+      else if (fsm.state === States.Pause_State) invoke("resume");
+      else {
+        howTo.hidden = true;
+        howToButton.setAttribute("aria-expanded", "false");
+      }
     }
   }
   container.addEventListener("keydown", onKeydown);
 
-  function destroy() {
-    container.removeEventListener("keydown", onKeydown);
-    if (container.parentNode) container.parentNode.removeChild(container);
-  }
-
-  /**
-   * Select a wardrobe card by its 0-based index (number-key support). Only
-   * changes the PREVIEW selection — never buys or equips (prompt §4). No-op
-   * outside the Wardrobe or for an out-of-range index.
-   * @param {number} i
-   */
-  function selectByIndex(i) {
-    if (fsm.state !== States.Wardrobe) return;
-    const rows = hatCatalog(getSave(), config);
-    if (i >= 0 && i < rows.length) {
-      wardrobeSelection = rows[i].id;
-      wardrobeMessage = "";
-      renderWardrobe();
-    }
-  }
-
   return {
     sync,
-    destroy,
-    selectByIndex,
+    isActive: () => Boolean(STATE_PANEL[fsm.state]),
     getWardrobeSelection: () => wardrobeSelection,
-    setWardrobeMessage: (m) => { wardrobeMessage = String(m || ""); },
+    selectByIndex(index) {
+      if (fsm.state !== States.Wardrobe) return;
+      const row = hatCatalog(getSave(), config)[index];
+      if (row) {
+        wardrobeSelection = row.id; wardrobeMessage = ""; renderWardrobe();
+        wardrobeCardNodes.get(row.id)?.card.focus();
+      }
+    },
+    selectShopByIndex(index) {
+      if (fsm.state !== States.Shop_State || !fsm.runState) return;
+      const row = shopRows(fsm.runState, config)[index];
+      if (row) {
+        shopSelection = row.id; shopMessage = ""; renderShop();
+        shopCardNodes.get(row.id)?.card.focus();
+      }
+    },
+    setWardrobeMessage(message) {
+      wardrobeMessage = String(message || "");
+      wardrobeMessageEl.textContent = wardrobeMessage;
+      menuMessage.textContent = wardrobeMessage;
+    },
+    destroy() {
+      container.removeEventListener("keydown", onKeydown);
+      if (container.parentNode) container.parentNode.removeChild(container);
+    },
   };
 }
 
 export default { createOverlay };
-

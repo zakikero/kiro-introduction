@@ -1,216 +1,138 @@
-﻿# Kiroâ€™s Haunted Flight
+# Kiro's Haunted Flight
 
-A Halloween flying adventure that combines Flappy-style obstacle navigation with turn-based battles, enemy possession, shops, and collectible ghost hats.
+**Flap through a haunted sky. Battle its creatures. Borrow their powers. Dress your ghost.**
 
-You play as **Ghosty**, a friendly ghost trying to survive a haunted flight and defeat the final boss. Each run offers temporary powers and upgrades; Candy earned at the end carries over toward permanent cosmetic unlocks.
+Kiro's Haunted Flight is a desktop browser adventure starring **Ghosty**, a friendly ghost navigating Halloween obstacles, choosing turn-based battles, and preparing for a final boss. Temporary spirit powers and shop upgrades shape each run, while earned Candy unlocks hats that stay with you.
 
-Built with Kiro through a requirements â†’ design â†’ tasks workflow. The game runs locally in a desktop browser with plain JavaScript and HTML5 Canvas. No backend, account, AWS deployment, or runtime AI API is needed.
+Built with **Kiro**, plain JavaScript, and HTML5 Canvas. It runs locally with no backend, account, cloud deployment, or runtime AI API.
 
-<img src="assets/ghosty_base.png" alt="Ghosty character artwork: a floating white ghost with black oval eyes" width="160">
+[Play locally](#play-locally) | [Meet-the-cast artwork](#meet-the-cast) | [Controls](#controls) | [Code guide](#code-guide)
 
-*Prepared character artwork. See [current implementation status](#current-implementation-status) for what is connected in the game.*
+## Play locally
 
-## Run locally
-
-You need a modern desktop browser and a static HTTP server. The commands below use Python 3. Node.js and npm are needed to install and run the automated tests, but the game itself has no build step.
-
-From the repository root:
+From the repository root, install the test dependency and start a static web server:
 
 ```sh
 npm install
-npm test
 python -m http.server 8177 --bind 127.0.0.1
 ```
 
-Open **[http://127.0.0.1:8177/](http://127.0.0.1:8177/)**. Keep the server terminal open; **Ctrl+C** stops it.
+Open **[http://127.0.0.1:8177/](http://127.0.0.1:8177/)**, then choose **Start Adventure**. Keep the terminal open while playing; **Ctrl+C** stops the server.
 
-On Windows PowerShell, use `npm.cmd install` and `npm.cmd test` if execution policy blocks `npm.ps1`. On macOS/Linux, your Python command may be `python3`.
+- **Requirements:** a modern desktop browser, Python 3 for the server above, and Node.js/npm for dependencies and tests.
+- **Windows PowerShell:** use `npm.cmd install` and `npm.cmd test` if execution policy blocks `npm.ps1`.
+- **macOS/Linux:** use `python3` if that is your Python command.
+- Serve over HTTP rather than double-clicking `index.html`, because browsers can block ES modules loaded through `file://`.
+- There is no build step. The npm script is `npm test`; the game is served directly from this directory.
 
-Serve the project over HTTP rather than opening `index.html` directly: browsers can block ES modules loaded through `file://`. The only npm script currently defined is `test`; there is no `npm start`, `npm run dev`, or build command.
+## A moonlit adventure
 
-## How the adventure works
+<img src="assets/background.png" alt="Illustrated haunted landscape with a purple moonlit sky and Halloween scenery" width="960">
 
-1. **Fly through the gaps.** Press Space or click the playfield to rise; gravity pulls Ghosty down between flaps. Each passed pipe pair adds to the runâ€™s Pipe Score.
-2. **Choose encounters.** Fly into an enemy symbol to enter a short turn-based battle, or avoid it and continue flying. Ordinary victories award Soul Coins and offer the defeated enemyâ€™s spirit.
-3. **Possess a spirit.** Accept the offer to gain that spiritâ€™s flight benefit and combat move. Only one spirit can be equipped at a time; accepting another replaces the current one.
-4. **Visit shops.** Shop entrances lead to potions, shields, and an attack upgrade bought with the runâ€™s Soul Coins. Purchase logic exists; the player-facing controls are still part of the UI refinement.
-5. **Face the boss.** The mandatory final boss arrives after 120 seconds of active flight. Defeat it to win the adventure; running out of Battle HP or suffering a fatal flight collision ends the run.
-6. **Earn Candy.** A completed run awards permanent Candy based on flight time, with a bonus for boss victory. The wardrobe uses Candy to unlock hats.
+*Scene artwork used by the game, shown here as an art preview rather than a gameplay screenshot.*
 
-The adventure schedule uses **active flight time**, not time spent in menus or battles:
+- **One-button flight:** flap through increasingly fast haunted wooden pillars, with readable gaps and responsive gravity.
+- **Optional encounters:** fly into enemy symbols for short turn-based battles, or keep flying.
+- **Enemy possession:** defeat Storm Bat or Pumpkin Guardian and choose whether to take its spirit.
+- **Run-specific shops:** spend Soul Coins on healing potions, a shield, or an attack upgrade.
+- **A final challenge:** survive to the mandatory boss at 120 seconds of active flight.
+- **A permanent wardrobe:** earn Candy, preview hats, buy them, and equip a complete Ghosty appearance.
+- **Desktop presentation:** a viewport-fitting playfield, fullscreen, illustrated characters, sound effects, music, and reduced-motion/mute settings.
 
-| Active flight time | Event |
-|---|---|
-| 15 seconds | Storm Bat encounter offered |
-| 35 seconds | First shop offered |
-| 60 seconds | Pumpkin Guardian encounter offered |
-| 85 seconds | Second shop offered |
-| 120 seconds | Mandatory final boss |
+Battle, shop, reward, and pause screens stop the flight clock. Encounter symbols are offered at 15 and 60 seconds; shops at 35 and 85 seconds. The offer appearing does not automatically enter the scene.
 
-Ordinary encounter and shop symbols scroll into the world; reaching their scheduled time does not automatically enter the scene. Battle, shop, reward, and pause screens stop the flight clock. Combat cooldowns advance by resolved turns.
+### Stay alive
 
-### Survival rules
+Pipe contact is fatal unless a shield absorbs it. A shield holds one charge and protects against that particular pipe pair until Ghosty clears it; **ground and ceiling are always fatal**, even with a shield. Battle HP protects you in combat, not from flight collisions.
 
-- **Pipes are fatal without a shield.** Battle HP does not protect against flight collisions.
-- A shield absorbs one pipe collision. Its grace applies only to that same pipe pair until Ghosty clears it; other pipes remain dangerous. Only one shield charge can be held.
-- **Ground and ceiling are always fatal**, even with a shield.
-- Difficulty increases in bounded speed steps. Every gap must remain passable with ordinary flapping, without a purchased item or spirit.
-- Returning from a battle or shop uses a safe checkpoint and a three-second countdown. Ordinary pause resumes the exact frozen flight state after its countdown.
-- Hats are cosmetic: they never change the hitbox, physics, damage, rewards, or powers.
+After a battle or shop, a safe checkpoint and countdown return you to flight. Ordinary pause preserves your exact position and velocity. Hats change appearance only: they never change the hitbox or difficulty.
 
-## Controls
+## Meet the cast
 
-These are the controls currently routed by the application. Number keys also support the numeric keypad.
+Ghosty's wardrobe swaps between these five complete appearances. Select a card to preview it, choose **Buy** to unlock an affordable hat, then **Equip** to wear it. Selecting alone never spends Candy.
 
-| Screen | Controls |
-|---|---|
-| Title | **Space**, **Enter**, or a playfield click starts the run and applies the first flap |
-| Flight | **Space** or playfield click flaps; **E** or the Flight Power button activates an available power |
-| Pause | **P / Escape** pauses flight; **Enter / Space / click** resumes; **Q** while paused ends the run |
-| Battle | **1** Attack, **2** Defend, **3** Use Item, **4** equipped spirit move; Enter/Space/click defaults to Attack |
-| Battle outcome | **Enter / Space / click** continues after victory or defeat |
-| Possession offer | **1** accepts/replaces the spirit; **2** declines; Enter/Space/click accepts |
-| Shop | **Enter / Space / click** leaves; number keys / on-screen controls buy items and use potions |
-| Results | **1** Restart, **2** Main Menu, **3** Wardrobe; Enter/Space/click defaults to Restart |
-| Wardrobe | Click a card (or **1**–**5**) to preview; on-screen **Buy** / **Equip** / **Back** buttons act; **Escape** returns to Main Menu |
+<table>
+  <tr>
+    <td align="center"><img src="assets/ghosty_base.png" alt="Ghosty without a hat" width="130"><br><strong>No Hat</strong><br>Free</td>
+    <td align="center"><img src="assets/ghosty_witch_hat.png" alt="Ghosty wearing a purple witch hat" width="130"><br><strong>Witch Hat</strong><br>3 Candy</td>
+    <td align="center"><img src="assets/ghosty_pumpkin_cap.png" alt="Ghosty wearing an orange pumpkin cap" width="130"><br><strong>Pumpkin Cap</strong><br>6 Candy</td>
+    <td align="center"><img src="assets/ghosty_bat_bonnet.png" alt="Ghosty wearing a purple bat bonnet" width="130"><br><strong>Bat Bonnet</strong><br>10 Candy</td>
+    <td align="center"><img src="assets/ghosty_haunted_crown.png" alt="Ghosty wearing a gold haunted crown" width="130"><br><strong>Haunted Crown</strong><br>15 Candy</td>
+  </tr>
+</table>
 
-Mute, Reduced Motion, Export/Import, and Fullscreen controls live in the Main Menu's Progress & Settings section. Losing browser focus pauses active flight.
+<table>
+  <tr>
+    <td align="center"><img src="assets/enemy_storm_bat.png" alt="Storm Bat enemy artwork" width="180"><br><strong>Storm Bat</strong></td>
+    <td align="center"><img src="assets/enemy_pumpkin_guardian.png" alt="Flying Pumpkin Guardian enemy artwork" width="180"><br><strong>Pumpkin Guardian</strong></td>
+    <td align="center"><img src="assets/boss_final.png" alt="Final Boss character artwork" width="220"><br><strong>The Final Boss</strong></td>
+  </tr>
+</table>
 
-## Combat, spirits, and shop items
-
-Battles are turn-based: Ghosty acts first, then the enemy responds unless defeated. Ghosty starts a run with **22 Battle HP** and **5 attack damage**. Defend reduces the next incoming attack; potions restore HP rather than providing flight protection. Battle HP persists between battles in the same run.
+*Character artwork. Explore all images and audition the audio in the [asset preview](assets/preview.html), served locally at [/assets/preview.html](http://127.0.0.1:8177/assets/preview.html).*
 
 | Spirit | Flight benefit | Combat benefit |
 |---|---|---|
-| Storm Bat | Hover for 0.6 seconds, with a five-second active-flight cooldown | Lightning strike with a two-turn cooldown |
-| Pumpkin Guardian | One shield gift on its first possession in a run | Fortified Defend reduces the next incoming attack by 75% |
+| Storm Bat | Brief Hover, activated with E | Lightning strike |
+| Pumpkin Guardian | One shield gift on first possession per run | Fortified Defend |
 
-Spirit powers belong to the current run. Switching spirits does not refill HP, consumables, or cooldowns, and repeatedly acquiring Pumpkin Guardian does not repeat its shield gift.
+Only one spirit is active at a time. Switching replaces it without refilling HP, items, or cooldowns. Your saved hat remains independent of possession.
 
-| Shop item | Soul Coin price | Effect |
-|---|---:|---|
-| Potion | 5 | Restores 10 Battle HP, capped at maximum HP |
-| Shield | 8 | Grants one shield charge, respecting the one-charge cap |
-| Attack upgrade | 7 | Adds 3 attack damage for the rest of the run; purchasable once per run |
+## Controls
 
-These are the current values in [src/config.js](src/config.js), which is the source of truth for balancing.
+Menus support mouse clicks and **Tab / Shift+Tab** navigation; **Enter / Space** activates a focused button.
 
-## Scores, currencies, and saves
+| Context | Controls |
+|---|---|
+| Flight | **Space / playfield click** flaps; **E** or Flight Power uses an available spirit power |
+| Pause | **P / Escape** pauses; Resume continues after a countdown; **Q** while paused ends the run |
+| Battle | **1** Attack, **2** Defend, **3** Item, **4** Spirit move |
+| Possession | **1** accepts/replaces the spirit; **2** declines |
+| Wardrobe | Click a card or **1-5** to preview; use **Buy**, **Equip**, or **Back** |
+| Shop | Click an item or **1-3** to select; **Buy** purchases; **U** uses an owned potion; **Leave Shop** returns |
+| Display/settings | Use Fullscreen, Mute, and Reduced Motion controls |
 
-| Value | Earned through | Lifetime |
-|---|---|---|
-| Pipe Score | Passing pipe pairs | Current run; the best score is saved |
-| Soul Coins | Ordinary battle victories, currently 6 per win | Current run |
-| Candy | Finalizing a run | Saved between runs; spent on hats |
+Number shortcuts also support the numeric keypad. UI actions are separate from flight input, so selecting or buying an item should not flap or close another screen.
 
-Candy is awarded once per completed run:
+## Progress between runs
+
+**Pipe Score** counts passed pairs, with your best saved as the high score. **Soul Coins** come from ordinary battle victories and buy upgrades for the current run. **Candy** is permanent:
 
 ```text
 Candy = floor(activeFlightTime / 15) + (bossDefeated ? 3 : 0)
 ```
 
-A run ending before 15 seconds earns no time-based Candy. Defeat and deliberately ending a started run still award the Candy earned so far.
+Candy is awarded once when a started run ends. A run shorter than 15 seconds earns no time-based Candy. Hats are permanent; spirits, HP, consumables, and upgrades reset for a new run.
 
-The wardrobe catalog contains **No Hat** for free, **Witch Hat** for 3 Candy, **Pumpkin Cap** for 6, **Bat Bonnet** for 10, and **Haunted Crown** for 15. Ownership, equipped hat, and Candy persist, and buying/equipping use the Wardrobe's visible controls (selecting a card only previews; buying never auto-equips).
-
-Progress is stored in browser `localStorage`:
-
-- High score, Candy, owned/equipped hats, and mute/reduced-motion preferences are saved.
-- An unfinished run is not saved or resumed.
-- Browser profiles, hostnames, and ports have separate storage. Use the same address to keep seeing the same progress.
-- Portable JSON export/import helpers exist, but their visible controls are pending. Imports validate a replacement save rather than merging two playersâ€™ progress.
-
-The internal save key is `flappy-kiro:save` and the export filename is `flappy-kiro-save.json`. These legacy identifiers are intentional compatibility names; the displayed game title is **Kiroâ€™s Haunted Flight**.
-
-## Current implementation status
-
-The core flight, encounters, combat, possession, boss, economy, and save logic are implemented, and the wardrobe/visual/audio refinement (interactive menus, runtime sprite swapping, larger display + fullscreen, detailed pipes, and event audio) is now wired in. **A browser pass is still recommended** to confirm pointer alignment, fullscreen, audio, and optical sprite registration, since the headless suite cannot see the rendered frame.
-
-| Area | Current status |
-|---|---|
-| Core adventure | Implemented, with automated coverage for its systems |
-| Wardrobe | Catalog, validation, persistence, and Results access exist; interactive selection/Buy/Equip controls are pending |
-| Shop | Economy and purchase helpers exist; normal purchase/potion controls are pending |
-| Asset pack | Complete local image/audio bundle is available; full runtime integration is in progress |
-| New Ghosty appearances | Matching no-hat and four hat-equipped sprites are prepared; runtime swapping is being integrated |
-| Menus and display | Clear action buttons, larger desktop display, fullscreen, and detailed pipes are specified in the refinement prompt |
-| Portable saves | Validation and export/import helpers exist; player-facing file controls are pending |
-
-Asset integration is underway through the shared loading and appearance modules. Visible behavior depends on the connected rendering, controls, and audio-event paths; the presence of an asset file or helper function alone does not mean its player-facing flow is complete. Verify these flows in a browser as the refinement progresses.
-
-The next implementation handoff is [the wardrobe and visual polish prompt](docs/KIRO_WARDROBE_AND_VISUAL_POLISH_PROMPT.md). The milestone checklist records implementation work; use actual browser verification to confirm player-facing completion.
+Progress and settings save to browser `localStorage`. The main menu provides JSON save export/import for moving progress between browsers or devices; unfinished runs are not restored. Use the same browser profile, hostname, and port to access the same local save.
 
 ## Code guide
 
-The application separates gameplay rules from browser input, drawing, audio, and persistence.
-
-| Files | Responsibility |
+| Files | What they do |
 |---|---|
-| [index.html](index.html), [src/main.js](src/main.js) | Browser entry point and orchestration: initialize the game, route actions, connect encounters, finalize runs, and save progress |
-| [src/state.js](src/state.js) | Finite state machine, transitions, current-run data, pause/resume, and the separate clocks |
-| [src/config.js](src/config.js) | Frozen configuration for physics, geometry, difficulty, combat, prices, timers, and rewards |
-| [src/loop.js](src/loop.js), [src/input.js](src/input.js), [src/rng.js](src/rng.js) | Fixed-step timing, state-scoped input intents, and seeded randomness |
-| [src/render.js](src/render.js), [src/audio.js](src/audio.js) | Canvas rendering and guarded browser audio |
-| [src/assets.js](src/assets.js), [src/appearance.js](src/appearance.js) | Shared cached image loading and Ghosty appearance/registration selection for the asset-integration work |
-| [src/systems/](src/systems) | Gameplay rules: `flight`, `spawner`, `collision`, `scoring`, `checkpoint`, `scheduler`, `combat`, `economy`, `spirits`, and `candy` |
-| [src/ui/](src/ui) | Screen presentation and view helpers: `menu`, `hud`, `battle`, `shop`, `results`, `wardrobe`, and `feedback` |
-| [src/save.js](src/save.js) | Save defaults, local storage, validation, export, and import |
-| [test/](test), [test-support/](test-support) | Unit/property tests and shared generators/assertion helpers |
-| [assets/](assets), [img/](img) | Game media and metadata; workshop reference imagery |
+| [index.html](index.html), [src/main.js](src/main.js) | Page layout, initialization, input routing, and connecting game systems |
+| [state.js](src/state.js), [loop.js](src/loop.js), [input.js](src/input.js) | State transitions, fixed-step simulation, and keyboard/pointer intents |
+| [config.js](src/config.js), [rng.js](src/rng.js) | Central tuning values and deterministic gameplay randomness |
+| [systems/](src/systems) | Flight, pipes, collisions, scoring, scheduling, checkpoints, combat, economy, spirits, and Candy |
+| [render.js](src/render.js), [assets.js](src/assets.js), [appearance.js](src/appearance.js), [audio.js](src/audio.js) | Drawing, cached images, sprite/hat selection, and sound/music |
+| [ui/](src/ui), [save.js](src/save.js) | Interactive screens, HUD, feedback, and validated persistence |
+| [test/](test), [test-support/](test-support) | Headless unit/property tests and shared helpers |
 
-### Architecture rules
+The logical world remains **960 x 640** while display scaling fits the screen. Simulation runs at **120 fixed steps per second**. Ghosty's **32 x 39** body and **24 x 31** collision hitbox stay independent of sprite and hat dimensions.
 
-- Simulation advances at **120 fixed steps per second**. Long frames are clamped to 0.1 seconds; interpolation affects drawing only.
-- The world uses a **960 Ã— 640 logical playfield**. Display scaling must not change gameplay coordinates or difficulty.
-- Ghostyâ€™s position uses center coordinates. Its logical body is **32 Ã— 39**, with a **24 Ã— 31** collision hitbox independent of PNG size, hats, or spirit decorations.
-- Gameplay systems operate on plain state and are tested independently of browser rendering.
-- Flight time, resume countdown, and turn-based combat use separate clocks.
-- Safe encounter returns and ordinary pause intentionally use different resume behavior.
-- Menu actions must not leak into flaps or other actions after a state transition.
-- Seeded gameplay randomness must remain deterministic; decorative variation should not consume the gameplay RNG.
-
-For a gameplay change, start with `src/config.js` or the relevant system. For a visible-control change, inspect `src/main.js`, `src/input.js`, the relevant `ui` module, and `index.html` together.
-
-## Tests
+### Run tests
 
 ```sh
-# Entire suite
 npm test
-
-# One focused suite
 node --test test/flight.test.js
 ```
 
-Tests use Nodeâ€™s built-in `node:test` runner, `node:assert/strict`, and `fast-check`. Property tests run at least 100 generated cases and use the feature tag `flappy-kiro`.
+The suite uses Node's `node:test` runner and `fast-check`, with at least 100 generated cases per property test. Browser checks are still necessary for appearance, mouse/keyboard interaction, sound, fullscreen, and resizing.
 
-Coverage includes physics, obstacle generation, collision/shield behavior, safe checkpoints, pause, combat and the boss action sequence, spirit cooldowns, economy, Candy finalization, save validation/round trips, and presentation helpers. These are headless tests; passing them does not replace mouse/keyboard, audio, resize, or visual checks in a browser.
+## Project documents
 
-## Assets and Kiro documents
+- [Requirements](.kiro/specs/flappy-kiro/requirements.md), [design](.kiro/specs/flappy-kiro/design.md), and [milestone tasks](.kiro/specs/flappy-kiro/tasks.md) document the Kiro development workflow.
+- [Steering files](.kiro/steering) define the product, stack, structure, gameplay invariants, and visual direction.
+- [Asset notes](assets/README.md), [manifest](assets/manifest.json), and [generation prompts](assets/generation_prompts.json) explain artwork, registration, and provenance.
 
-The local media bundle contains **18 PNGs, 11 WAVs, and one MP3**, including Ghostyâ€™s five normal appearances, two spirit forms, enemies, boss, standalone hats, shop, backgrounds, and sound effects.
-
-- [Asset preview](assets/preview.html) â€” view it locally at [http://127.0.0.1:8177/assets/preview.html](http://127.0.0.1:8177/assets/preview.html).
-- [Asset integration notes](assets/README.md) â€” whole-sprite versus overlay rules and audio lifecycle.
-- [Asset manifest](assets/manifest.json) â€” filename/id mappings, source dimensions, approximate body/hat anchors, and checksums.
-- [Generation prompts](assets/generation_prompts.json) and [earlier pack prompts](assets/source_generation_prompts.json) â€” artwork provenance.
-- [Requirements](.kiro/specs/flappy-kiro/requirements.md) â€” what the game should do.
-- [Design](.kiro/specs/flappy-kiro/design.md) â€” architecture, contracts, and test properties.
-- [Tasks](.kiro/specs/flappy-kiro/tasks.md) â€” six milestones: flight core, encounter loop, possession, final boss, progression/saves, and presentation.
-- [Steering](.kiro/steering) â€” product scope, stack, structure, gameplay invariants, and visual/audio direction.
-- [Wardrobe and visual polish prompt](docs/KIRO_WARDROBE_AND_VISUAL_POLISH_PROMPT.md) â€” detailed implementation requirements for the next refinement.
-
-Adventure mode and desktop keyboard/mouse play are the current scope. Endless mode, mobile-first controls, cloud accounts/sync, multiplayer, and runtime AI calls are outside the first release.
-
-## Troubleshooting
-
-- **Blank page or module errors:** run the HTTP server from the repository root and check the browser console; avoid `file://`.
-- **No sound:** interact with the game first to unlock browser audio, then check the Mute setting. Blocked or missing audio should not interrupt gameplay.
-- **A menu choice or new asset does not respond/appear:** check the implementation-status section; prepared art and tested helpers still need their UI/event connections.
-- **Progress appears missing:** confirm the same browser profile, hostname, and port. `localhost` and `127.0.0.1` are different origins.
-- **Port 8177 is busy:** use another port, remembering that it will have separate browser-local progress.
-
-## License
-
-See [LICENCE.md](LICENCE.md) for the repositoryâ€™s **MIT No Attribution (MIT-0)** license.
-
-
+Adventure mode and desktop keyboard/mouse play are the current focus. See [LICENCE.md](LICENCE.md) for the repository's MIT No Attribution (MIT-0) license.

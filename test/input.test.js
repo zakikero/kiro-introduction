@@ -11,7 +11,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { createInputQueue, IntentType, DEFAULT_KEY_MAP } from "../src/input.js";
+import { createInputQueue, attachInput, isUiIntent, IntentType, DEFAULT_KEY_MAP } from "../src/input.js";
 import { fc, assertProperty, propertyName } from "../test-support/helpers.js";
 
 // A physical-key timeline: each sample is the key's state (true = down) at that
@@ -135,3 +135,67 @@ test("DEFAULT_KEY_MAP maps Digit1..Digit5 and Numpad1..Numpad5 to UI_SELECT 0..4
   }
 });
 
+
+// Native DOM controls retain their own keyboard activation while game shortcuts
+// remain usable outside editable fields.
+function keyboardTarget() {
+  const handlers = new Map();
+  return {
+    addEventListener(type, listener) { handlers.set(type, listener); },
+    removeEventListener(type) { handlers.delete(type); },
+    fire(type, code, target = { tagName: "DIV" }) {
+      const event = { code, target, defaultPrevented: false,
+        preventDefault() { this.defaultPrevented = true; } };
+      handlers.get(type)?.(event);
+      return event;
+    },
+  };
+}
+
+test("native buttons and editable fields do not enqueue game actions", () => {
+  const q = createInputQueue({ initialScope: "Wardrobe" });
+  const keys = keyboardTarget();
+  const detach = attachInput(q, { keyTarget: keys, now: () => 0 });
+  for (const tagName of ["BUTTON", "A", "SUMMARY", "INPUT", "TEXTAREA", "SELECT"]) {
+    for (const code of ["Enter", "Space"]) {
+      const event = keys.fire("keydown", code, { tagName });
+      assert.equal(event.defaultPrevented, false, tagName + " retains native activation");
+    }
+  }
+  for (const target of [{ tagName: "INPUT" }, { tagName: "DIV", isContentEditable: true }]) {
+    for (const code of ["Digit1", "KeyU", "KeyP"]) {
+      assert.equal(keys.fire("keydown", code, target).defaultPrevented, false);
+    }
+  }
+  assert.deepEqual(q.consumeInputIntents(), []);
+  detach();
+});
+
+test("shop potion shortcut is a debounced UI action and number shortcuts work on cards", () => {
+  const q = createInputQueue({ initialScope: "Shop_State" });
+  const keys = keyboardTarget();
+  const detach = attachInput(q, { keyTarget: keys, now: () => 0 });
+  assert.equal(DEFAULT_KEY_MAP.KeyU, IntentType.UI_USE_POTION);
+  assert.equal(isUiIntent(IntentType.UI_USE_POTION), true);
+  keys.fire("keydown", "KeyU", { tagName: "BUTTON" });
+  keys.fire("keydown", "KeyU", { tagName: "BUTTON" });
+  keys.fire("keyup", "KeyU", { tagName: "BUTTON" });
+  keys.fire("keydown", "KeyU", { tagName: "BUTTON" });
+  keys.fire("keydown", "Digit3", { tagName: "BUTTON" });
+  const intents = q.consumeInputIntents();
+  assert.equal(intents.filter(i => i.type === IntentType.UI_USE_POTION).length, 2);
+  assert.equal(intents.find(i => i.type === IntentType.UI_SELECT).index, 2);
+  assert.equal(intents.some(i => i.type === IntentType.FLAP), false);
+  detach();
+});
+
+test("releasing a gameplay key after focus moves to a button clears its held latch", () => {
+  const q = createInputQueue({ initialScope: "Active_Flight_State" });
+  const keys = keyboardTarget();
+  const detach = attachInput(q, { keyTarget: keys, now: () => 0 });
+  keys.fire("keydown", "Space");
+  keys.fire("keyup", "Space", { tagName: "BUTTON" });
+  keys.fire("keydown", "Space");
+  assert.equal(q.consumeInputIntents().filter(i => i.type === IntentType.FLAP).length, 2);
+  detach();
+});

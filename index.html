@@ -72,6 +72,8 @@
       display: block;
       width: 100%;
       height: 100%;
+      position: relative;
+      z-index: 0;
     }
 
     /* Fullscreen: the wrapper fills the screen, canvas letterboxes within. */
@@ -109,12 +111,14 @@
     .kiro-overlay {
       position: absolute;
       inset: 0;
+      z-index: 2;
       display: flex;
       align-items: center;
       justify-content: center;
-      pointer-events: none; /* empty areas pass clicks to the canvas (flight) */
+      pointer-events: none; /* container never eats clicks; only visible panels do */
     }
-    .kiro-overlay.kiro-active { pointer-events: auto; }
+    /* A visible panel always receives clicks (no dependency on per-frame state
+       toggling). Hidden panels use display:none and receive nothing. */
 
     .kiro-panel {
       pointer-events: auto;
@@ -194,6 +198,43 @@
     .kiro-card-name { font-weight: 600; }
     .kiro-card-status { font-size: 0.82rem; color: var(--text-dim); }
 
+    /* Screen controls own their layer; hidden nested help must stay hidden. */
+    .kiro-overlay [hidden] { display: none !important; }
+    .kiro-overlay.kiro-active {
+      pointer-events: auto;
+      background: rgba(12, 5, 24, 0.22);
+    }
+    .kiro-wardrobe { width: 1040px; max-width: 94%; box-sizing: border-box; }
+    .kiro-wardrobe-layout {
+      display: grid;
+      grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.4fr);
+      gap: 24px;
+      align-items: start;
+    }
+    .kiro-preview-wrap {
+      position: sticky;
+      top: 0;
+      padding: 12px;
+      border: 1px solid var(--panel-edge);
+      border-radius: 14px;
+      background: radial-gradient(ellipse at center, #493064, #241333 75%);
+    }
+    .kiro-preview { display: block; width: 100%; max-width: 300px; height: auto; margin: auto; }
+    .kiro-preview-wrap h3 { margin: 0 0 6px; }
+    .kiro-preview-status { color: var(--accent); margin: 4px 0; }
+    .kiro-preview-hint { color: var(--text-dim); font-size: 0.85rem; }
+    .kiro-wardrobe-options { min-width: 0; text-align: left; }
+    .kiro-wardrobe-options .kiro-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .kiro-card { min-width: 0; }
+    .kiro-card-art { width: 72px; height: 72px; object-fit: contain; align-self: center; }
+    .kiro-equipped-note { color: var(--accent); font-weight: 700; }
+    #game-canvas:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+    @media (max-width: 700px) {
+      .kiro-wardrobe-layout { grid-template-columns: 1fr; gap: 12px; }
+      .kiro-preview-wrap { position: static; }
+      .kiro-preview { max-width: 180px; }
+    }
+
     .kiro-howto { text-align: left; color: var(--text-dim); font-size: 0.9rem; margin: 10px 0; }
     .kiro-howto[hidden] { display: none; }
     .kiro-progress { border-top: 1px solid var(--panel-edge); margin-top: 16px; padding-top: 8px; }
@@ -226,7 +267,7 @@
   </div>
 
   <div id="game-wrapper">
-    <canvas id="game-canvas" width="960" height="640" aria-label="Game playfield"></canvas>
+    <canvas id="game-canvas" width="960" height="640" tabindex="0" aria-label="Game playfield"></canvas>
     <!-- The DOM overlay (menus/wardrobe/pause/results) is injected here by ui/overlay.js -->
   </div>
 
@@ -241,3 +282,7 @@
 </body>
 
 </html>
+
+
+
+

@@ -24,6 +24,7 @@ import assert from "node:assert/strict";
 import { CONFIG } from "../src/config.js";
 import {
   computeLetterbox,
+  createRenderer,
   renderToContext,
   PLACEHOLDER_ART,
 } from "../src/render.js";
@@ -291,3 +292,50 @@ test(
     );
   },
 );
+
+test("DOM-owned panels suppress legacy Canvas menu content and stale run HUD", () => {
+  const save = { candy: 5, ownedHats: ["none"], equippedHat: "none", highScore: 7 };
+  for (const state of [States.Main_Menu_State, States.Wardrobe, States.Results_State, States.Shop_State]) {
+    const { ctx } = makeRecordingCtx();
+    const text = [];
+    ctx.fillText = value => text.push(String(value));
+    renderToContext(ctx, 960, 640, { state, runState: makeRunState() }, 0,
+      CONFIG, {}, save, null, "none", true);
+    assert.deepEqual(text, [], "DOM panel should own the visible labels in " + state);
+  }
+});
+
+test("the overlay renderer option follows its getter without removing Canvas-only fallback", () => {
+  const { ctx } = makeRecordingCtx();
+  const text = [];
+  ctx.fillText = value => text.push(String(value));
+  const canvas = { width: 960, height: 640, getContext: () => ctx };
+  let active = true;
+  const renderer = createRenderer(canvas, {
+    config: CONFIG,
+    save: { highScore: 8, equippedHat: "none" },
+    overlayActive: () => active,
+  });
+  renderer(States.Main_Menu_State, 0);
+  assert.deepEqual(text, [], "DOM mode draws just the backdrop");
+  active = false;
+  renderer(States.Main_Menu_State, 0);
+  assert.ok(text.some(t => t.includes("High Score")), "Canvas-only fallback still draws its menu");
+});
+
+test("pause overlay suppresses HUD while active flight retains it", () => {
+  const runState = makeRunState();
+  const before = JSON.stringify(runState);
+  for (const [state, expectsHud] of [
+    [States.Pause_State, false],
+    [States.Active_Flight_State, true],
+  ]) {
+    const { ctx } = makeRecordingCtx();
+    const text = [];
+    ctx.fillText = value => text.push(String(value));
+    renderToContext(ctx, 960, 640, { state, runState }, 0,
+      CONFIG, {}, { equippedHat: "none" }, null, null, true);
+    assert.equal(text.some(t => t.includes("Soul Coins")), expectsHud);
+  }
+  assert.equal(JSON.stringify(runState), before, "drawing never changes frozen/run state");
+});

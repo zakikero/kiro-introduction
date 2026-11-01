@@ -158,8 +158,7 @@ function boot() {
     // gate for empty-area clicks.
     isInFlightArea: () =>
       fsm.state === States.Active_Flight_State ||
-      fsm.state === States.Ready_State ||
-      fsm.state === States.Main_Menu_State,
+      fsm.state === States.Ready_State,
   });
 
   // The visible on-screen Flight_Power button (Req 1.7). It enqueues a
@@ -285,6 +284,7 @@ function boot() {
     // selection lives in the DOM overlay (built just below). Reads it lazily so
     // the preview tracks the player's card selection without equipping.
     wardrobePreview: () => (overlay ? overlay.getWardrobeSelection() : null),
+    overlayActive: () => Boolean(overlay && overlay.isActive()),
   });
 
   // --- Interactive DOM overlay (prompt §2, §4) -----------------------------
@@ -307,6 +307,11 @@ function boot() {
       },
       buyHat: (id) => buyWardrobeHat(id),
       equipHat: (id) => equipWardrobeHat(id),
+      buyItem: (id) => buyShopItem(id),
+      usePotion: () => useShopPotion(),
+      leaveShop: () => {
+        if (fsm.state === States.Shop_State) fsm.resumeToFlight();
+      },
       resume: () => {
         if (fsm.state === States.Pause_State) fsm.requestResume();
       },
@@ -317,7 +322,9 @@ function boot() {
         }
       },
       restart: () => {
-        if (fsm.state === States.Results_State) fsm.restart(freshSeed());
+        // Restart begins a fresh Run immediately (same opening-flap behavior as
+        // Start Adventure), so the player does not land on a dead Ready screen.
+        if (fsm.state === States.Results_State) startRun();
       },
       toMainMenu: () => {
         if (fsm.state === States.Results_State) fsm.toMainMenu();
@@ -745,13 +752,10 @@ function boot() {
   }
 
   /**
-   * Resolve one in-Wardrobe input (Req 8.8, 10.6). The Wardrobe is a no-Run
-   * cosmetic screen; the only keyboard navigation it needs is "go back": Esc
-   * (UI_PAUSE) or a confirm/flap returns to the Main Menu. Buying and equipping
-   * Hats happen through the on-screen controls (bound below), which call the
-   * pure wardrobe.js functions. Hat ids are chosen by the on-screen rows rather
-   * than number keys here, so a stray UI_SELECT does nothing destructive.
-   * @param {{ type: string }} intent
+   * Route numbered wardrobe shortcuts to preview selection and Escape back to
+   * the menu. Native Enter/Space activation belongs to the focused overlay
+   * control; Buy and Equip call their validated save/persistence callbacks.
+   * @param {{ type: string, index?: number }} intent
    */
   function routeWardrobeIntent(intent) {
     // Number keys select a card for PREVIEW only (never buy) (prompt §4).
@@ -843,6 +847,14 @@ function boot() {
   function routeShopIntent(intent) {
     const rs = fsm.runState;
     if (!rs) return;
+    if (intent.type === IntentType.UI_SELECT && overlay) {
+      overlay.selectShopByIndex(intent.index);
+      return;
+    }
+    if (intent.type === IntentType.UI_USE_POTION) {
+      useShopPotion();
+      return;
+    }
     if (intent.type === IntentType.UI_CONFIRM || isFlap(intent)) {
       fsm.resumeToFlight(); // Shop â†’ checkpoint â†’ Resume_Countdown â†’ flight
     }
@@ -1066,11 +1078,28 @@ function boot() {
    * (Ready â†’ Active_Flight) so flight begins immediately on the starting gesture.
    */
   function startRun() {
+    // Ignore a stray call if we are already mid-Run (the overlay only shows the
+    // Start button outside a Run, but guard anyway so a double-activation can't
+    // rebuild the Run on top of itself).
+    if (
+      fsm.state !== States.Main_Menu_State &&
+      fsm.state !== States.Results_State &&
+      fsm.state !== States.Ready_State
+    ) {
+      return;
+    }
     const seed = freshSeed();
     rng = createRng(seed);
     fsm._rebindRng(rng);
-    fsm.startNewRun(seed);
-    fsm.transition(States.Active_Flight_State);
+    fsm.startNewRun(seed); // Main_Menu/Results -> Ready, builds the RunState
+    fsm.transition(States.Active_Flight_State); // Ready -> Active_Flight (started = true)
+    // The starting gesture IS the first Flap_Input (Req 1.13): without it,
+    // Ghosty would enter flight and immediately fall. The keyboard/click-flap
+    // path sets flap inline; the Start BUTTON runs outside the tick, so enqueue
+    // a flap into the queue — now scoped to Active_Flight_State after the
+    // transition above — and the next tick applies the opening flap velocity.
+    inputQueue.registerKeyDown(IntentType.FLAP);
+    inputQueue.registerKeyUp(IntentType.FLAP);
     playSfx("jump");
   }
 
@@ -1320,6 +1349,9 @@ if (typeof document !== "undefined") {
     boot();
   }
 }
+
+
+
 
 
 

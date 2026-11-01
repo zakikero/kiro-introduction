@@ -46,6 +46,7 @@ export const IntentType = Object.freeze({
   UI_PAUSE: "UI_PAUSE", // request pause
   UI_RESUME: "UI_RESUME", // deliberate resume from pause/countdown
   UI_END_RUN: "UI_END_RUN", // End Run from pause: finalize + go to Results (Req 9.8)
+  UI_USE_POTION: "UI_USE_POTION", // use one owned potion while visiting a shop
   UI_MENU: "UI_MENU", // generic menu navigation action
   UI_BUTTON: "UI_BUTTON", // generic on-screen button activation
   UI_SELECT: "UI_SELECT", // pick option N (carries a 0-based `index`): battle
@@ -84,6 +85,7 @@ const UI_INTENTS = new Set([
   IntentType.UI_PAUSE,
   IntentType.UI_RESUME,
   IntentType.UI_END_RUN,
+  IntentType.UI_USE_POTION,
   IntentType.UI_MENU,
   IntentType.UI_BUTTON,
   IntentType.UI_SELECT,
@@ -116,6 +118,7 @@ export const DEFAULT_KEY_MAP = Object.freeze({
   // Q ends the current Run from the Pause_State (Req 9.8): finalize + Results.
   // It is a UI intent (never a flap, Req 1.6) and is only acted on in pause.
   KeyQ: IntentType.UI_END_RUN,
+  KeyU: IntentType.UI_USE_POTION,
   // Number keys select the Nth option in the current UI (battle action,
   // possession choice, shop row). They are UI intents carrying a 0-based
   // `index`, never flaps (Req 1.6). Both the digit row and the numpad map.
@@ -404,6 +407,19 @@ export function attachInput(queue, options = {}) {
 
   /** @param {KeyboardEvent} ev */
   function onKeyDown(ev) {
+    // Native controls own their keyboard activation. In particular, Space on a
+    // focused Buy/Equip button must not also become a flap or menu confirmation.
+    if (ev.defaultPrevented) return;
+    const target = ev.target;
+    const tag = String((target && target.tagName) || "").toUpperCase();
+    const editable = target && (
+      target.isContentEditable ||
+      (typeof target.closest === "function" && target.closest('[contenteditable="true"]'))
+    );
+    if (editable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    if ((ev.code === "Enter" || ev.code === "Space") &&
+        (tag === "BUTTON" || tag === "A" || tag === "SUMMARY")) return;
+
     const mapping = keyMap[ev.code];
     if (!mapping) return;
     // A mapping is either a plain intent-kind string, or an object carrying the

@@ -738,6 +738,17 @@ export function createRenderer(canvas, options = {}) {
   const prefsSource = options.prefs;
   const saveSource = options.save;
   const feedbackSource = options.feedback;
+  const previewSource = options.wardrobePreview;
+  const overlaySource = options.overlayActive;
+
+  /** Whether an interactive DOM panel owns this frame's menu content. */
+  function currentOverlayActive() {
+    try {
+      return Boolean(typeof overlaySource === "function" ? overlaySource() : overlaySource);
+    } catch {
+      return false;
+    }
+  }
 
   /** @returns {object|null} the current feedback buffer (ui/feedback.js), or null */
   function currentFeedback() {
@@ -807,6 +818,7 @@ export function createRenderer(canvas, options = {}) {
       currentSave(),
       currentFeedback(),
       currentPreview(),
+      currentOverlayActive(),
     );
   };
 }
@@ -825,6 +837,8 @@ export function createRenderer(canvas, options = {}) {
  * @param {{ reducedMotion?: boolean }} [prefs] presentation prefs
  * @param {object|null} [save] the loaded SaveData (for the Results total Candy)
  * @param {object|null} [feedback] the transient feedback buffer (ui/feedback.js)
+ * @param {string|null} [previewHat] selected hat for the Canvas-only wardrobe fallback
+ * @param {boolean} [overlayActive] whether a DOM panel owns the menu content
  * @returns {void}
  */
 export function renderToContext(
@@ -838,6 +852,7 @@ export function renderToContext(
   save = null,
   feedback = null,
   previewHat = null,
+  overlayActive = false,
 ) {
   if (!ctx) return;
 
@@ -867,8 +882,20 @@ export function renderToContext(
   ctx.clip();
 
   const isFlightLike = stateName === null || FLIGHT_LIKE_STATES.has(stateName);
+  const hasDomPanel = Boolean(overlayActive && (
+    stateName === States.Main_Menu_State ||
+    stateName === States.Results_State ||
+    stateName === States.Pause_State ||
+    stateName === States.Wardrobe ||
+    stateName === States.Shop_State
+  ));
 
-  if (isFlightLike && runState) {
+  if (hasDomPanel && stateName !== States.Pause_State) {
+    // The DOM panel owns labels, choices and its dedicated Ghosty preview.
+    // Repainting the legacy Canvas menu behind it causes overlapping text and
+    // a second ghost. Keep only the shared atmosphere under those panels.
+    drawBackground(ctx, config);
+  } else if (isFlightLike && runState) {
     // Background -> pipes -> symbols -> Ghosty (entities, with cosmetic Spirit
     // aura + Hat) -> effects(stub). Cosmetics are presentation only: the Spirit
     // is read from the live RunState and the equipped Hat from SaveData; neither
@@ -934,7 +961,7 @@ export function renderToContext(
 
   // 3. HUD overlay: drawn in SCREEN space (outside the world transform) so it
   //    stays crisp and legibly positioned at any viewport size.
-  if (runState) {
+  if (runState && !hasDomPanel) {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     drawHud(ctx, runState, config, {
@@ -982,6 +1009,7 @@ export default {
   computeLetterbox,
   PLACEHOLDER_ART,
 };
+
 
 
 
