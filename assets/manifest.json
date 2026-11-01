@@ -1,0 +1,575 @@
+{
+  "format_version": 3,
+  "title": "Kiro's Haunted Flight",
+  "logical_playfield": {
+    "width": 960,
+    "height": 640
+  },
+  "images": [
+    {
+      "label": "Ghosty — supplied original",
+      "kind": "original",
+      "width": 1290,
+      "height": 1567,
+      "frames": 1,
+      "alpha_bounds": [
+        0,
+        0,
+        1290,
+        1567
+      ],
+      "has_transparency": true,
+      "fully_transparent_pixels": 465091,
+      "provenance": "supplied project asset",
+      "body_rect": [
+        0,
+        0,
+        1290,
+        1567
+      ],
+      "hat_anchor": {
+        "x": 851,
+        "y": 24
+      },
+      "logical_body": {
+        "width": 32,
+        "height": 39
+      },
+      "alignment_status": "suggested starting alignment; verify in the game",
+      "facing": "right",
+      "file": "ghosty.png"
+    },
+    {
+      "kind": "character",
+      "width": 1254,
+      "height": 1254,
+      "frames": 1,
+      "alpha_bounds": [
+        26,
+        23,
+        1214,
+        1215
+      ],
+      "has_transparency": true,
+      "fully_transparent_pixels": 992752,
+      "provenance": "built-in image_gen",
+      "facing": "left",
+      "anchor": {
+        "x": 633,
+        "y": 1238
+      },
+      "source": "sprites/enemy-storm-bat.png",
+      "file": "enemy_storm_bat.png"
+    },
+    {
+      "provenance": "built-in image_gen",
+      "frames": 1,
+      "has_transparency": true,
+      "kind": "character",
+      "file": "enemy_pumpkin_guardian.png",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "kind": "character",
+      "width": 1254,
+      "height": 1254,
+      "frames": 1,
+      "alpha_bounds": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "has_transparency": true,
+      "fully_transparent_pixels": 785185,
+      "provenance": "built-in image_gen",
+      "facing": "left",
+      "anchor": {
+        "x": 627,
+        "y": 1254
+      },
+      "source": "sprites/boss-final.png",
+      "file": "boss_final.png"
+    },
+    {
+      "kind": "spirit",
+      "width": 1312,
+      "height": 1199,
+      "frames": 1,
+      "alpha_bounds": [
+        0,
+        74,
+        1288,
+        1103
+      ],
+      "has_transparency": true,
+      "fully_transparent_pixels": 1059485,
+      "provenance": "built-in image_gen",
+      "body_rect": [
+        434,
+        240,
+        629,
+        767
+      ],
+      "hat_anchor": {
+        "x": 748,
+        "y": 252
+      },
+      "logical_body": {
+        "width": 32,
+        "height": 39
+      },
+      "alignment_status": "suggested starting alignment; verify in the game",
+      "facing": "right",
+      "source": "sprites/ghosty-storm-bat.png",
+      "file": "spirit_storm_bat.png",
+      "render_mode": "replace_ghosty_align_body_rect"
+    },
+    {
+      "kind": "spirit",
+      "width": 1138,
+      "height": 1382,
+      "frames": 1,
+      "alpha_bounds": [
+        0,
+        55,
+        1124,
+        1327
+      ],
+      "has_transparency": true,
+      "fully_transparent_pixels": 957307,
+      "provenance": "built-in image_gen",
+      "body_rect": [
+        212,
+        221,
+        805,
+        981
+      ],
+      "hat_anchor": {
+        "x": 615,
+        "y": 235
+      },
+      "logical_body": {
+        "width": 32,
+        "height": 39
+      },
+      "alignment_status": "suggested starting alignment; verify in the game",
+      "facing": "right",
+      "source": "sprites/ghosty-pumpkin-guardian.png",
+      "file": "spirit_pumpkin_guardian.png",
+      "render_mode": "replace_ghosty_align_body_rect"
+    },
+    {
+      "kind": "hat",
+      "width": 1254,
+      "height": 1254,
+      "frames": 1,
+      "alpha_bounds": [
+        34,
+        39,
+        1204,
+        1215
+      ],
+      "has_transparency": true,
+      "fully_transparent_pixels": 1050591,
+      "provenance": "built-in image_gen",
+      "attachment_point": {
+        "x": 636,
+        "y": 1132
+      },
+      "suggested_width_relative_to_ghost_body": 1.15,
+      "source": "hats/hat-witch.png",
+      "file": "hat_witch.png"
+    },
+    {
+      "kind": "hat",
+      "width": 1254,
+      "height": 1254,
+      "frames": 1,
+      "alpha_bounds": [
+        0,
+        15,
+        1200,
+        1239
+      ],
+      "has_transparency": true,
+      "fully_transparent_pixels": 802964,
+      "provenance": "built-in image_gen",
+      "attachment_point": {
+        "x": 600,
+        "y": 1130
+      },
+      "suggested_width_relative_to_ghost_body": 1.15,
+      "source": "hats/hat-pumpkin-cap.png",
+      "file": "hat_pumpkin.png"
+    },
+    {
+      "kind": "hat",
+      "width": 1254,
+      "height": 1254,
+      "frames": 1,
+      "alpha_bounds": [
+        0,
+        29,
+        1243,
+        1153
+      ],
+      "has_transparency": true,
+      "fully_transparent_pixels": 1088649,
+      "provenance": "built-in image_gen",
+      "attachment_point": {
+        "x": 622,
+        "y": 1067
+      },
+      "suggested_width_relative_to_ghost_body": 1.15,
+      "source": "hats/hat-bat-bonnet.png",
+      "file": "hat_bat.png"
+    },
+    {
+      "kind": "hat",
+      "width": 1254,
+      "height": 1254,
+      "frames": 1,
+      "alpha_bounds": [
+        0,
+        17,
+        1209,
+        1237
+      ],
+      "has_transparency": true,
+      "fully_transparent_pixels": 1004032,
+      "provenance": "built-in image_gen",
+      "attachment_point": {
+        "x": 604,
+        "y": 1130
+      },
+      "suggested_width_relative_to_ghost_body": 1.15,
+      "source": "hats/hat-haunted-crown.png",
+      "file": "hat_crown.png"
+    },
+    {
+      "provenance": "built-in image_gen",
+      "frames": 1,
+      "has_transparency": true,
+      "kind": "shop_symbol",
+      "file": "shop.png",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "kind": "background",
+      "width": 1536,
+      "height": 1024,
+      "frames": 1,
+      "alpha_bounds": [
+        0,
+        0,
+        1536,
+        1024
+      ],
+      "has_transparency": false,
+      "fully_transparent_pixels": 0,
+      "provenance": "built-in image_gen",
+      "recommended_render_size": {
+        "width": 960,
+        "height": 640
+      },
+      "scroll_strategy": "slow pan / crossfade; seamless tiling is not guaranteed",
+      "source": "backgrounds/background-flight.png",
+      "file": "background.png"
+    },
+    {
+      "file": "ghosty_base.png",
+      "kind": "player_base",
+      "width": 1254,
+      "height": 1254,
+      "frames": 1,
+      "has_transparency": true,
+      "fully_transparent_pixels": 1066355,
+      "provenance": "built-in image_gen",
+      "body_reference_rect": [
+        288,
+        308,
+        671,
+        818
+      ],
+      "reference_rect_is_estimate": true,
+      "render_mode": "whole_sprite_align_body_reference",
+      "contains_hat": false,
+      "hat_anchor": {
+        "x": 624,
+        "y": 318
+      }
+    },
+    {
+      "file": "ghosty_witch_hat.png",
+      "kind": "player_equipped",
+      "width": 1254,
+      "height": 1254,
+      "frames": 1,
+      "has_transparency": true,
+      "fully_transparent_pixels": 842534,
+      "provenance": "built-in image_gen",
+      "body_reference_rect": [
+        408,
+        530,
+        566,
+        690
+      ],
+      "reference_rect_is_estimate": true,
+      "render_mode": "whole_sprite_align_body_reference",
+      "contains_hat": true
+    },
+    {
+      "file": "ghosty_pumpkin_cap.png",
+      "kind": "player_equipped",
+      "width": 1254,
+      "height": 1254,
+      "frames": 1,
+      "has_transparency": true,
+      "fully_transparent_pixels": 821407,
+      "provenance": "built-in image_gen",
+      "body_reference_rect": [
+        400,
+        610,
+        492,
+        600
+      ],
+      "reference_rect_is_estimate": true,
+      "render_mode": "whole_sprite_align_body_reference",
+      "contains_hat": true
+    },
+    {
+      "file": "ghosty_bat_bonnet.png",
+      "kind": "player_equipped",
+      "width": 1254,
+      "height": 1254,
+      "frames": 1,
+      "has_transparency": true,
+      "fully_transparent_pixels": 856749,
+      "provenance": "built-in image_gen",
+      "body_reference_rect": [
+        359,
+        530,
+        533,
+        650
+      ],
+      "reference_rect_is_estimate": true,
+      "render_mode": "whole_sprite_align_body_reference",
+      "contains_hat": true
+    },
+    {
+      "file": "ghosty_haunted_crown.png",
+      "kind": "player_equipped",
+      "width": 1254,
+      "height": 1254,
+      "frames": 1,
+      "has_transparency": true,
+      "fully_transparent_pixels": 908520,
+      "provenance": "built-in image_gen",
+      "body_reference_rect": [
+        400,
+        525,
+        574,
+        700
+      ],
+      "reference_rect_is_estimate": true,
+      "render_mode": "whole_sprite_align_body_reference",
+      "contains_hat": true
+    },
+    {
+      "label": "Battle Background",
+      "file": "background_battle.png",
+      "kind": "background",
+      "width": 1536,
+      "height": 1024,
+      "frames": 1,
+      "alpha_bounds": [
+        0,
+        0,
+        1536,
+        1024
+      ],
+      "has_transparency": false,
+      "fully_transparent_pixels": 0,
+      "provenance": "built-in image_gen",
+      "recommended_render_size": {
+        "width": 960,
+        "height": 640
+      },
+      "scroll_strategy": "static battle plate",
+      "optional": true
+    }
+  ],
+  "audio": [
+    {
+      "file": "jump.wav",
+      "sample_rate": 44100,
+      "channels": 2,
+      "bits_per_sample": 16,
+      "duration_seconds": 0.369
+    },
+    {
+      "file": "game_over.wav",
+      "sample_rate": 44100,
+      "channels": 2,
+      "bits_per_sample": 16,
+      "duration_seconds": 2.247
+    },
+    {
+      "file": "score.wav",
+      "sample_rate": 44100,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "duration_seconds": 0.31
+    },
+    {
+      "file": "shield_break.wav",
+      "sample_rate": 44100,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "duration_seconds": 0.28
+    },
+    {
+      "file": "battle_hit.wav",
+      "sample_rate": 44100,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "duration_seconds": 0.23
+    },
+    {
+      "file": "purchase.wav",
+      "sample_rate": 44100,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "duration_seconds": 0.47
+    },
+    {
+      "file": "possession.wav",
+      "sample_rate": 44100,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "duration_seconds": 0.77
+    },
+    {
+      "file": "victory.wav",
+      "sample_rate": 44100,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "duration_seconds": 1.22
+    },
+    {
+      "file": "music.mp3",
+      "sample_rate": 44100,
+      "channels": 2,
+      "bit_rate_kbps": 160,
+      "phrase_duration_seconds": 40.0,
+      "bpm": 96,
+      "key": "D harmonic minor",
+      "provenance": "original procedurally composed and synthesized instrumental; encoded with lameenc 1.9.0",
+      "suggested_volume": 0.18,
+      "loop": true
+    },
+    {
+      "file": "battle_hurt.wav",
+      "duration_seconds": 0.24,
+      "sample_rate": 44100,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "provenance": "original procedurally synthesized sound effect",
+      "optional": true
+    },
+    {
+      "file": "heal.wav",
+      "duration_seconds": 0.67,
+      "sample_rate": 44100,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "provenance": "original procedurally synthesized sound effect",
+      "optional": true
+    },
+    {
+      "file": "hover.wav",
+      "duration_seconds": 0.43,
+      "sample_rate": 44100,
+      "channels": 1,
+      "bits_per_sample": 16,
+      "provenance": "original procedurally synthesized sound effect",
+      "optional": true
+    }
+  ],
+  "bindings": {
+    "enemies": {
+      "A": "enemy_storm_bat.png",
+      "B": "enemy_pumpkin_guardian.png",
+      "boss": "boss_final.png"
+    },
+    "spirits": {
+      "storm_bat": "spirit_storm_bat.png",
+      "pumpkin_guardian": "spirit_pumpkin_guardian.png"
+    },
+    "hats": {
+      "witchHat": "hat_witch.png",
+      "pumpkinCap": "hat_pumpkin.png",
+      "batBonnet": "hat_bat.png",
+      "hauntedCrown": "hat_crown.png",
+      "none": null
+    },
+    "shop": "shop.png",
+    "background": "background.png",
+    "player_sprites": {
+      "none": "ghosty_base.png",
+      "witchHat": "ghosty_witch_hat.png",
+      "pumpkinCap": "ghosty_pumpkin_cap.png",
+      "batBonnet": "ghosty_bat_bonnet.png",
+      "hauntedCrown": "ghosty_haunted_crown.png"
+    },
+    "legacy_player_fallback": "ghosty.png",
+    "battle_background": "background_battle.png"
+  },
+  "notes": [
+    "Manifest is an integration handoff, not automatically consumed by current runtime.",
+    "ghosty_base.png is the new coherent no-hat default. ghosty.png remains the legacy fallback.",
+    "player_sprites map saved hat ids to complete unpossessed Ghosty images. Do not double-draw hats or bodies.",
+    "Possessed forms use the whole spirit sprite plus exactly one standalone selected hat; none draws no hat.",
+    "body_rect and body_reference_rect arrays are [x,y,width,height] in source pixels.",
+    "New body_reference_rect values are visual estimates. Refine optical registration in browser; keep physical body32x39 and collision24x31.",
+    "New Ghosty images use body_reference_rect. Existing spirit images use body_rect. Uniform-scale the reference to the logical body and draw the entire image around it.",
+    "Backgrounds are1536x1024, exactly3:2; scale to960x640 logical drawing. Not guaranteed seamless tiling.",
+    "Pumpkin Guardian uses the flying revision. Original Desktop source pack is retained.",
+    "Battle background, battle_hurt, heal and hover are extra assets from the original Desktop pack."
+  ],
+  "checksums_sha256": {
+    "ghosty.png": "fdbb44d625c7d20c9167b0b7da1b97ba14c7f39e6082cd2606329e9d5fc578d7",
+    "enemy_storm_bat.png": "71c0492f0339b786842b2aca47565949352327feba0070a4827723141a44309d",
+    "enemy_pumpkin_guardian.png": "d04ec0ae383654f4ea6543c5a5ecde5cf9c3e760a7c21910d048b132c9e47385",
+    "boss_final.png": "28158b6170c8031bcb1597c102fbec07544209a62418c381b0169ac5964b181a",
+    "spirit_storm_bat.png": "b40b9e40e62698782b026fd92489cffb2d499f5786419d095c0c3bb5ce90e178",
+    "spirit_pumpkin_guardian.png": "d1d500c8f098d40446d43e35aeb0831bc00c618804344b13fae2952423e24bed",
+    "hat_witch.png": "cb36d1376ed12591d152dff9d0229578f49cef6a7ccde19509f6d6cb7064a5af",
+    "hat_pumpkin.png": "1a1524003f260cd98547005d581845947af1b0ff700282f7709feadff18272db",
+    "hat_bat.png": "fb93a9379e11f91518d6bc1e42678aa00b2301bfde6d6e60bbaf0aedf535272f",
+    "hat_crown.png": "1fed54af3eaa8c199d8d73bc8b738fcbadf4fbf6301c5edca0c037fc96389e39",
+    "shop.png": "431aa8d27e44c3b403542ed9cb7813cf9b59f45d2b14bd41154586c90f3c5f9c",
+    "background.png": "46908a1df65b4458fb27037b66a7c4f3d45e139a530ee458314c1a92f98b5c73",
+    "ghosty_base.png": "d9744c708b8d817a1afb73918cff47cf0ff0c36ae0783cbec9fee3ce7322417e",
+    "ghosty_witch_hat.png": "d00dc0add872ccf8b9715d3f4efa431b021a58fc5edf888fb7e203d33963816a",
+    "ghosty_pumpkin_cap.png": "a22eb8d17fd89990566b448e228f656230865367c2ea7ba8938690da34115130",
+    "ghosty_bat_bonnet.png": "ffaf26c6e7b2a8c54ee7fc4a39a5614e3396aa219d16e4519f12e8d936668533",
+    "ghosty_haunted_crown.png": "72f7536a757b2042362823203a0d62317010f688ced55dacb2d38bd9da0043e7",
+    "background_battle.png": "deb8b8c970346832522302f048bf18d0c5698058d0aad9ab46a3882b972e2441",
+    "jump.wav": "416b392e7cd0e1e27ea4736bafa2a0abb7dd7c40ed88a3c547af581c883857ba",
+    "game_over.wav": "2338f6368e4f17f75d06dd5a5957b7293a59c02886bc2f4f011edbe8fdb5f8fb",
+    "score.wav": "71427289080c94353c40dbfca469e909a93d459ff05456aff103e651f349fb58",
+    "shield_break.wav": "d9db5b330497d86df86b5ddeb35027bce98af5d93d9710840695488dbc39423a",
+    "battle_hit.wav": "0044091ef3d5ebd275b9f56065df706f73304e0b664caea712aee2e878067d73",
+    "purchase.wav": "53d71c863e58c5c818a84ae0ce3f736984f9e7a49b65f3f74060af69a563a728",
+    "possession.wav": "50470f3bb78830e773e390eb33eb0b362440afb9deffcebfa4f09b5ee4cf78fc",
+    "victory.wav": "dcb1790c2f071199086a8156b929b2918d65970d6aefbea03106d9bf66b3d186",
+    "music.mp3": "47afc9b0bc432eef918cee4ab640ea4a8420a89d6cbe1ecc8c4d4162ad142e9c",
+    "battle_hurt.wav": "9c255fc3196dce9f4bbf0dd179bc3eb6412d8d1e29fd6b50c5944625c4453355",
+    "heal.wav": "1bf5a26940c1b5abe249f1aff1babf36476a7b58dba4ee51ce7dc12682ba51cf",
+    "hover.wav": "0b6447c5b0bcbe636c49eb705c6d54743e1410b1ff7dbb5aa0b62ce5dc0731db"
+  }
+}

@@ -1,0 +1,1032 @@
+{
+  "pbtResults": {
+    "1.8 Property test for flap velocity": {
+      "status": "passed",
+      "lastRunTimestamp": 1793494471616
+    },
+    "1.21 Property test for ordinary-pause preservation": {
+      "status": "passed",
+      "lastRunTimestamp": 1793495215214
+    },
+    "2.3 Property tests for combat core": {
+      "status": "passed",
+      "lastRunTimestamp": 1793496187727
+    },
+    "2.6 Property tests for purchases and potion use": {
+      "status": "passed",
+      "lastRunTimestamp": 1793496337162
+    },
+    "2.8 Property test and example tests for checkpoint resumption and no input leak": {
+      "status": "passed",
+      "lastRunTimestamp": 1793497107580
+    },
+    "3.4 Property test for Hover": {
+      "status": "passed",
+      "lastRunTimestamp": 1793497942985
+    },
+    "5.2 Property tests for candy and finalize": {
+      "status": "passed",
+      "lastRunTimestamp": 1793500983736
+    },
+    "5.6 Property tests for export/import": {
+      "status": "passed",
+      "lastRunTimestamp": 1793501374026
+    }
+  },
+  "executionHistory": {
+    "1.1 Create project shell and central config": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492408518
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492423621
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492645783
+      }
+    ],
+    "1.2 Set up a minimal no-browser test runner with fast-check": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492408907
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492649105
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492919250
+      }
+    ],
+    "1.3 Implement the fixed-timestep loop": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492409134
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492650507
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492917893
+      }
+    ],
+    "1.4 Property tests for the loop": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492409254
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492923628
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793493024276
+      }
+    ],
+    "1.5 Implement the FSM skeleton, three-clock dispatch, and RunState initialization": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492409383
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492925036
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494388620
+      }
+    ],
+    "1.6 Property test for the three-clock model": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492409584
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494400925
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494524570
+      }
+    ],
+    "1.7 Implement flight physics with center-coordinate geometry": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492409748
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492926428
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494389515
+      }
+    ],
+    "1.8 Property test for flap velocity": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492409882
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494400213
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494523617
+      }
+    ],
+    "1.9 Implement the obstacle spawner and difficulty curve": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492410024
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492651202
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492920145
+      }
+    ],
+    "1.10 Property tests for the spawner": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492410186
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492927199
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793493025123
+      }
+    ],
+    "1.11 Implement swept collision, hitbox, and shields": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492410338
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793493035936
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494390935
+      }
+    ],
+    "1.12 Property tests for collisions and shields": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492410509
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494529921
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494809027
+      }
+    ],
+    "1.13 Implement scoring": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492410658
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494528373
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494811298
+      }
+    ],
+    "1.14 Property test for scoring": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492410804
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494819039
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793495089555
+      }
+    ],
+    "1.15 Implement input handling with debounce, barriers, and tick assignment": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492410973
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793493037353
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494392298
+      }
+    ],
+    "1.16 Property test for held-key debounce": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492411129
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494530768
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494810302
+      }
+    ],
+    "1.17 Implement audio with graceful degradation": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492411284
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793493038194
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494392986
+      }
+    ],
+    "1.18 Implement flight rendering and HUD with center-coordinate Ghosty drawing": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492411439
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494532180
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494813768
+      }
+    ],
+    "1.19 Implement systems/checkpoint.js safe checkpoint selection": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492411577
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494533067
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494812675
+      }
+    ],
+    "1.20 Implement ordinary-pause exact-state resumption, resume countdown, restart, and high-score display": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492411704
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793494818150
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793495090368
+      }
+    ],
+    "1.21 Property test for ordinary-pause preservation": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492411822
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793495096080
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793495230993
+      }
+    ],
+    "1.22 Wire the playable flight core and verify Milestone 1": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492411945
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793495234862
+      },
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793495603261
+      }
+    ],
+    "2.1 Implement the adventure scheduler with optional-entrance lifecycle (first encounter and first shop)": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492412085
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793495722223
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793496111487
+      }
+    ],
+    "2.2 Implement the turn-based combat engine for one ordinary enemy": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492412219
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793495723508
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793496112398
+      }
+    ],
+    "2.3 Property tests for combat core": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492412346
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793496119865
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793496250628
+      }
+    ],
+    "2.4 Implement the economy, potion inventory, and shop": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492412470
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793495724147
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793496113495
+      }
+    ],
+    "2.5 Implement potion use (battle and shop)": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492412594
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793496120748
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793496251333
+      }
+    ],
+    "2.7 Implement the dedicated battle scene and shop UI with freeze and safe resumption": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492412795
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793496256650
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793496911570
+      }
+    ],
+    "2.8 Property test and example tests for checkpoint resumption and no input leak": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492413071
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793496918275
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793497141078
+      }
+    ],
+    "2.9 Wire the encounter loop and verify Milestone 2": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492413207
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793497145286
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793497505080
+      }
+    ],
+    "3.1 Implement possession and spirit tracking": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492413343
+      },
+      {
+        "executionId": "e824a457-f08f-47d0-950d-2d8f1a814e8c",
+        "chatSessionId": "sess_90d536a8-949f-4219-a307-dec307a9ef9a",
+        "timestamp": 1793497557244
+      },
+      {
+        "executionId": "e824a457-f08f-47d0-950d-2d8f1a814e8c",
+        "chatSessionId": "sess_90d536a8-949f-4219-a307-dec307a9ef9a",
+        "timestamp": 1793497845129
+      }
+    ],
+    "3.2 Property tests for possession": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492413473
+      },
+      {
+        "executionId": "e824a457-f08f-47d0-950d-2d8f1a814e8c",
+        "chatSessionId": "sess_90d536a8-949f-4219-a307-dec307a9ef9a",
+        "timestamp": 1793497850489
+      },
+      {
+        "executionId": "e824a457-f08f-47d0-950d-2d8f1a814e8c",
+        "chatSessionId": "sess_90d536a8-949f-4219-a307-dec307a9ef9a",
+        "timestamp": 1793498220312
+      }
+    ],
+    "3.3 Implement Hover (Storm_Bat Flight_Power) and Flight_Power input": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492413599
+      },
+      {
+        "executionId": "e824a457-f08f-47d0-950d-2d8f1a814e8c",
+        "chatSessionId": "sess_90d536a8-949f-4219-a307-dec307a9ef9a",
+        "timestamp": 1793497557968
+      },
+      {
+        "executionId": "e824a457-f08f-47d0-950d-2d8f1a814e8c",
+        "chatSessionId": "sess_90d536a8-949f-4219-a307-dec307a9ef9a",
+        "timestamp": 1793497846268
+      }
+    ],
+    "3.4 Property test for Hover": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492413722
+      },
+      {
+        "executionId": "e824a457-f08f-47d0-950d-2d8f1a814e8c",
+        "chatSessionId": "sess_90d536a8-949f-4219-a307-dec307a9ef9a",
+        "timestamp": 1793497851452
+      },
+      {
+        "executionId": "e824a457-f08f-47d0-950d-2d8f1a814e8c",
+        "chatSessionId": "sess_90d536a8-949f-4219-a307-dec307a9ef9a",
+        "timestamp": 1793498221199
+      }
+    ],
+    "3.5 Implement spirit combat moves and the possession offer flow": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492413839
+      },
+      {
+        "executionId": "e824a457-f08f-47d0-950d-2d8f1a814e8c",
+        "chatSessionId": "sess_90d536a8-949f-4219-a307-dec307a9ef9a",
+        "timestamp": 1793497852522
+      },
+      {
+        "executionId": "e824a457-f08f-47d0-950d-2d8f1a814e8c",
+        "chatSessionId": "sess_90d536a8-949f-4219-a307-dec307a9ef9a",
+        "timestamp": 1793498221952
+      }
+    ],
+    "3.6 Wire spirits into the running game and verify Milestone 3": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492413964
+      },
+      {
+        "executionId": "e824a457-f08f-47d0-950d-2d8f1a814e8c",
+        "chatSessionId": "sess_90d536a8-949f-4219-a307-dec307a9ef9a",
+        "timestamp": 1793498226871
+      },
+      {
+        "executionId": "e824a457-f08f-47d0-950d-2d8f1a814e8c",
+        "chatSessionId": "sess_90d536a8-949f-4219-a307-dec307a9ef9a",
+        "timestamp": 1793498638394
+      }
+    ],
+    "4.1 Implement the full adventure schedule": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492414106
+      },
+      {
+        "executionId": "15541e9f-db4f-4e4f-8e10-34fc16007dc3",
+        "chatSessionId": "sess_f2036bda-6519-4cbe-8327-f2d9e2445538",
+        "timestamp": 1793498913248
+      },
+      {
+        "executionId": "15541e9f-db4f-4e4f-8e10-34fc16007dc3",
+        "chatSessionId": "sess_f2036bda-6519-4cbe-8327-f2d9e2445538",
+        "timestamp": 1793499402199
+      }
+    ],
+    "4.2 Implement precise per-owner cooldowns and the Final_Boss action sequence": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492414221
+      },
+      {
+        "executionId": "15541e9f-db4f-4e4f-8e10-34fc16007dc3",
+        "chatSessionId": "sess_f2036bda-6519-4cbe-8327-f2d9e2445538",
+        "timestamp": 1793498914411
+      },
+      {
+        "executionId": "15541e9f-db4f-4e4f-8e10-34fc16007dc3",
+        "chatSessionId": "sess_f2036bda-6519-4cbe-8327-f2d9e2445538",
+        "timestamp": 1793499403305
+      }
+    ],
+    "4.3 Property tests for cooldowns and boss sequence": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492414349
+      },
+      {
+        "executionId": "15541e9f-db4f-4e4f-8e10-34fc16007dc3",
+        "chatSessionId": "sess_f2036bda-6519-4cbe-8327-f2d9e2445538",
+        "timestamp": 1793499407625
+      },
+      {
+        "executionId": "15541e9f-db4f-4e4f-8e10-34fc16007dc3",
+        "chatSessionId": "sess_f2036bda-6519-4cbe-8327-f2d9e2445538",
+        "timestamp": 1793500052373
+      }
+    ],
+    "4.4 Example test for the base-ghost boss-win trace": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492414470
+      },
+      {
+        "executionId": "15541e9f-db4f-4e4f-8e10-34fc16007dc3",
+        "chatSessionId": "sess_f2036bda-6519-4cbe-8327-f2d9e2445538",
+        "timestamp": 1793499409079
+      },
+      {
+        "executionId": "15541e9f-db4f-4e4f-8e10-34fc16007dc3",
+        "chatSessionId": "sess_f2036bda-6519-4cbe-8327-f2d9e2445538",
+        "timestamp": 1793500053344
+      }
+    ],
+    "4.5 Implement the results screen content and actions": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492414590
+      },
+      {
+        "executionId": "15541e9f-db4f-4e4f-8e10-34fc16007dc3",
+        "chatSessionId": "sess_f2036bda-6519-4cbe-8327-f2d9e2445538",
+        "timestamp": 1793499409701
+      },
+      {
+        "executionId": "15541e9f-db4f-4e4f-8e10-34fc16007dc3",
+        "chatSessionId": "sess_f2036bda-6519-4cbe-8327-f2d9e2445538",
+        "timestamp": 1793500054310
+      }
+    ],
+    "4.6 Wire the full adventure and verify Milestone 4": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492414715
+      },
+      {
+        "executionId": "15541e9f-db4f-4e4f-8e10-34fc16007dc3",
+        "chatSessionId": "sess_f2036bda-6519-4cbe-8327-f2d9e2445538",
+        "timestamp": 1793500059324
+      },
+      {
+        "executionId": "15541e9f-db4f-4e4f-8e10-34fc16007dc3",
+        "chatSessionId": "sess_f2036bda-6519-4cbe-8327-f2d9e2445538",
+        "timestamp": 1793500293825
+      }
+    ],
+    "5.1 Implement candy accrual and idempotent finalize": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492414840
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793500521371
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793500902670
+      }
+    ],
+    "5.2 Property tests for candy and finalize": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492414962
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793500907120
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793501270356
+      }
+    ],
+    "5.3 Implement local save load/write with validation": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492415084
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793500522265
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793500903429
+      }
+    ],
+    "5.4 Property test for load tolerance": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492415199
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793500908082
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793501271309
+      }
+    ],
+    "5.5 Implement save export/import with validate→preview→confirm→replace": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492415318
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793500909488
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793501272656
+      }
+    ],
+    "5.6 Property tests for export/import": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492415447
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793501279733
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793501389168
+      }
+    ],
+    "5.7 Implement the Wardrobe and hats": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492415577
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793500910429
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793501273596
+      }
+    ],
+    "5.8 Implement auto-pause, End Run, and unstarted-run handling": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492415700
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793500911491
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793501274765
+      }
+    ],
+    "5.9 Wire meta-progression and verify Milestone 5": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492415827
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793501394336
+      },
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793501605831
+      }
+    ],
+    "6.1 Complete canvas layers, placeholder art, and logical-playfield scaling": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492416068
+      },
+      {
+        "executionId": "0ed7cdb4-dacd-4f31-8dc7-6af90b0e115a",
+        "chatSessionId": "sess_492ae96d-eb33-4a43-8653-37117d362ab0",
+        "timestamp": 1793501768662
+      },
+      {
+        "executionId": "0ed7cdb4-dacd-4f31-8dc7-6af90b0e115a",
+        "chatSessionId": "sess_492ae96d-eb33-4a43-8653-37117d362ab0",
+        "timestamp": 1793502565398
+      }
+    ],
+    "6.2 Complete HUD, battle-scene presentation, feedback, and accessibility": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492416226
+      },
+      {
+        "executionId": "0ed7cdb4-dacd-4f31-8dc7-6af90b0e115a",
+        "chatSessionId": "sess_492ae96d-eb33-4a43-8653-37117d362ab0",
+        "timestamp": 1793501769592
+      },
+      {
+        "executionId": "0ed7cdb4-dacd-4f31-8dc7-6af90b0e115a",
+        "chatSessionId": "sess_492ae96d-eb33-4a43-8653-37117d362ab0",
+        "timestamp": 1793502566100
+      }
+    ],
+    "6.3 Balancing pass against targets": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492416340
+      },
+      {
+        "executionId": "0ed7cdb4-dacd-4f31-8dc7-6af90b0e115a",
+        "chatSessionId": "sess_492ae96d-eb33-4a43-8653-37117d362ab0",
+        "timestamp": 1793502574020
+      },
+      {
+        "executionId": "0ed7cdb4-dacd-4f31-8dc7-6af90b0e115a",
+        "chatSessionId": "sess_492ae96d-eb33-4a43-8653-37117d362ab0",
+        "timestamp": 1793502650614
+      }
+    ],
+    "6.4 Optional additional randomized coverage and presentation polish": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492416458
+      }
+    ],
+    "6.5 Final full verification": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793492416577
+      },
+      {
+        "executionId": "0ed7cdb4-dacd-4f31-8dc7-6af90b0e115a",
+        "chatSessionId": "sess_492ae96d-eb33-4a43-8653-37117d362ab0",
+        "timestamp": 1793502654399
+      },
+      {
+        "executionId": "0ed7cdb4-dacd-4f31-8dc7-6af90b0e115a",
+        "chatSessionId": "sess_492ae96d-eb33-4a43-8653-37117d362ab0",
+        "timestamp": 1793502943030
+      }
+    ],
+    "1. Milestone 1 — Playable Flight Core": [
+      {
+        "executionId": "19f92bae-6010-4237-8725-ed02225e3406",
+        "chatSessionId": "sess_70864c4f-8809-477c-9b29-8660cc23e25c",
+        "timestamp": 1793495604069
+      }
+    ],
+    "2.6 Property tests for purchases and potion use": [
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793495715112
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793496255733
+      },
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793496912813
+      }
+    ],
+    "2. Milestone 2 — One Complete Encounter Loop": [
+      {
+        "executionId": "3a4dea18-0aa0-47bf-b67b-96fb2b669f73",
+        "chatSessionId": "sess_401c93a6-5fa2-4b4d-9f05-bfc5668309a2",
+        "timestamp": 1793497505599
+      }
+    ],
+    "3. Milestone 3 — Spirits and Possession": [
+      {
+        "executionId": "e824a457-f08f-47d0-950d-2d8f1a814e8c",
+        "chatSessionId": "sess_90d536a8-949f-4219-a307-dec307a9ef9a",
+        "timestamp": 1793498639285
+      }
+    ],
+    "4. Milestone 4 — Adventure and Final Boss": [
+      {
+        "executionId": "15541e9f-db4f-4e4f-8e10-34fc16007dc3",
+        "chatSessionId": "sess_f2036bda-6519-4cbe-8327-f2d9e2445538",
+        "timestamp": 1793500294098
+      }
+    ],
+    "5. Milestone 5 — Meta-Progression and Saves": [
+      {
+        "executionId": "9b7aab67-a71d-4fa1-abf2-f5aab0b8c2aa",
+        "chatSessionId": "sess_a639e449-003a-4a79-b273-341459440a49",
+        "timestamp": 1793501606131
+      }
+    ]
+  }
+}

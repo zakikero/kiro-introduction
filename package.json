@@ -1,0 +1,14 @@
+{
+  "name": "flappy-kiro",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kiro's Haunted Flight — a vanilla-web Halloween flying RPG.",
+  "license": "SEE LICENCE.md",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "fast-check": "^3.23.1"
+  }
+}
