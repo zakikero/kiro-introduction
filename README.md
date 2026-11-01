@@ -1,10 +1,10 @@
-# Flappy Kiro
+# Kiro’s Haunted Flight
 
-Initial folder containing support resources for the Flappy Kiro game.
+Assets and specifications for Kiro’s Haunted Flight, a Halloween-themed flying RPG.
 
 ## Example UI
 
-![Flappy Kiro UI](img/example-ui.png)
+![Workshop reference UI](img/example-ui.png)
 
 ## Resources
 

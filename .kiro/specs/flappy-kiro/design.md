@@ -2,7 +2,7 @@
 
 ## Overview
 
-Flappy Kiro is a desktop-first, Halloween-themed flying RPG built to ship in a single evening. Ghosty flies through scrolling pipes, optionally engages turn-based battles, shops with in-run currency, possesses defeated spirits, and fights a final boss. Across runs, players earn Candy and buy cosmetic hats.
+Kiro’s Haunted Flight is a desktop-first, Halloween-themed flying RPG built to ship in a single evening. Ghosty flies through scrolling pipes, optionally engages turn-based battles, shops with in-run currency, possesses defeated spirits, and fights a final boss. Across runs, players earn Candy and buy cosmetic hats.
 
 This design is deliberately small and pragmatic. It targets a vanilla web stack with no framework, no build step, no backend, and no network:
 

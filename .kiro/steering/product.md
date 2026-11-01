@@ -1,6 +1,6 @@
 # Product
 
-## Flappy Kiro
+## Kiro’s Haunted Flight
 
 A desktop-first, Halloween-themed flying RPG that runs entirely in a modern desktop web browser. No backend, no accounts, no network dependency.
 

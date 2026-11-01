@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Flappy Kiro is a desktop-first, Halloween-themed flying RPG starring Ghosty, a small friendly ghost. Ghosty flies through a haunted, side-scrolling world of pipes under a purple-and-orange moonlit sky. The core gameplay loop is: fly through obstacles, choose optional enemy encounters, fight short turn-based battles, earn rewards and possess defeated enemies, visit shops, and continue toward a final boss. Possessing an enemy spirit changes both how Ghosty flies and what Ghosty can do in battle.
+Kiro’s Haunted Flight is a desktop-first, Halloween-themed flying RPG starring Ghosty, a small friendly ghost. Ghosty flies through a haunted, side-scrolling world of pipes under a purple-and-orange moonlit sky. The core gameplay loop is: fly through obstacles, choose optional enemy encounters, fight short turn-based battles, earn rewards and possess defeated enemies, visit shops, and continue toward a final boss. Possessing an enemy spirit changes both how Ghosty flies and what Ghosty can do in battle.
 
 The first release ships a single Adventure mode that ends in a final boss and a victory or defeat result. Across runs, players earn a permanent cosmetic currency called Candy and spend it on Halloween hats in a Wardrobe. The experience is playful and atmospheric rather than frightening: haunted scenery, pumpkins, bats, spirits, and moonlight, rendered as readable Halloween art in the supplied soft illustrated style.
 
@@ -31,7 +31,7 @@ This specification explicitly resolves the following contradictions from the ear
 
 ## Glossary
 
-- **Game**: The complete Flappy Kiro application running in a desktop web browser.
+- **Game**: The complete Kiro’s Haunted Flight application running in a desktop web browser.
 - **Player**: The human user interacting with the Game.
 - **Ghosty**: The player-controlled ghost character, rendered from `assets/ghosty.png` by default.
 - **Logical_Playfield**: The fixed logical coordinate space (in logical pixels) in which all physics and collisions are computed, independent of on-screen display size. Initial size: 960 wide by 640 tall (a wide landscape layout), configurable.

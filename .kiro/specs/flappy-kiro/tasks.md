@@ -1,4 +1,4 @@
-# Implementation Plan: Flappy Kiro
+# Implementation Plan: Kiro’s Haunted Flight
 
 ## Overview
 
@@ -11,7 +11,7 @@ The pure-logic modules (`config.js`, `rng.js`, `loop.js`, `state.js`, `systems/*
 - [ ] 1. Milestone 1 — Playable Flight Core
 
   - [ ] 1.1 Create project shell and central config
-    - Create `index.html` with a Canvas and control instructions, and an ES-module entry point under `/src/`
+    - Create `index.html` with a Canvas and control instructions, and an ES-module entry point under `/src/`; use **Kiro’s Haunted Flight** for the browser tab title and main menu heading
     - Create `src/config.js` exporting a frozen `CONFIG` object holding every value from the Configurable Initial Defaults table: the 960×640 wide landscape Logical_Playfield, gravity, Normal_Flap velocity (set not added), terminal velocity, the Ghosty logical body size (≈32×39), Ghosty initial center (160, 320) and initial vertical velocity 0, Hover duration (0.6 active-flight s) and Hover cooldown (5 active-flight s), scroll base/increment/milestones/max, hitbox inset (4 → derived ≈24×31 Hitbox), pipe width/spacing, gap height, clearances, shield cap, combat numbers, the boss enemy-action sequence (Normal → Telegraph → Special → Normal → Normal → Normal → Telegraph → Special) and special cooldown, prices, triggers, potion inventory initial count 0, candy constants, resume countdown, and save version
     - Create `src/rng.js` with a small seeded RNG for deterministic spawner and tests
     - _Requirements: 1.1, 2.2, 12.1_
