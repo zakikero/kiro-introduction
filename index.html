@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -8,14 +8,22 @@
   <style>
     :root {
       color-scheme: dark;
+      --plum: #1b1033;
+      --plum-deep: #120b24;
+      --panel: rgba(24, 12, 46, 0.92);
+      --panel-edge: #3a2a5e;
+      --text: #efe6ff;
+      --text-dim: #c9b8e6;
+      --accent: #ffb347;
+      --teal: #9ad0ff;
+      --danger: #e06a6a;
     }
 
-    html,
-    body {
+    html, body {
       margin: 0;
       height: 100%;
-      background: #120b24;
-      color: #e8d8ff;
+      background: var(--plum-deep);
+      color: var(--text);
       font-family: system-ui, "Segoe UI", sans-serif;
     }
 
@@ -23,54 +31,63 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       min-height: 100vh;
-      gap: 16px;
-      padding: 16px;
       box-sizing: border-box;
     }
 
-    h1 {
+    /* Compact toolbar so the playfield + controls fit vertically. */
+    .topbar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 6px 12px;
+      box-sizing: border-box;
+    }
+
+    .topbar h1 {
       margin: 0;
-      font-size: 1.6rem;
+      font-size: 1.1rem;
       font-weight: 600;
-      text-align: center;
-      /* Soft illustrated Halloween feel: moonlit purple with a warm glow. */
       color: #f6e9ff;
       text-shadow: 0 0 12px rgba(255, 150, 60, 0.35);
     }
 
-    /* The canvas holds the fixed 960x640 logical playfield. A later task
-         letterboxes it to the viewport; here it simply scales down to fit. */
-    #game-canvas {
-      max-width: 100%;
-      max-height: 70vh;
+    /* The game wrapper holds the canvas AND the DOM overlay; fullscreen targets
+       this so HUD + overlays are included, not just the canvas. It fits the
+       largest 3:2 area available, capped ~1600px wide, no page scroll in play. */
+    #game-wrapper {
+      position: relative;
+      width: min(100vw - 24px, 1600px, (100vh - 120px) * 1.5);
       aspect-ratio: 960 / 640;
-      background: #1b1033;
-      border: 1px solid #3a2a5e;
+      background: var(--plum);
+      border: 1px solid var(--panel-edge);
       border-radius: 8px;
       box-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
     }
 
-    .controls {
-      max-width: 640px;
-      text-align: center;
-      font-size: 0.9rem;
-      line-height: 1.5;
-      color: #c9b8e6;
+    #game-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
     }
 
-    .controls strong {
-      color: #ffb347;
+    /* Fullscreen: the wrapper fills the screen, canvas letterboxes within. */
+    #game-wrapper:fullscreen {
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      border: none;
     }
+    #game-wrapper:fullscreen #game-canvas { object-fit: contain; }
 
-    /* On-screen Flight_Power button (Req 1.7). Soft illustrated Halloween
-       style; its enabled/disabled state surfaces Hover readiness at a glance:
-       bright + glowing when a power-providing spirit is equipped and ready,
-       dimmed when unavailable or on cooldown. */
     .action-bar {
       display: flex;
       justify-content: center;
+      gap: 12px;
+      padding: 8px;
     }
 
     .flight-power-button {
@@ -80,93 +97,138 @@
       border: 1px solid #c77d1f;
       border-radius: 999px;
       padding: 10px 22px;
+      min-height: 44px;
       cursor: pointer;
       box-shadow: 0 0 16px rgba(255, 150, 60, 0.4);
-      transition:
-        opacity 120ms ease,
-        box-shadow 120ms ease;
+      transition: opacity 120ms ease, box-shadow 120ms ease;
     }
+    .flight-power-button:hover:not(:disabled) { box-shadow: 0 0 22px rgba(255, 150, 60, 0.6); }
+    .flight-power-button:disabled { cursor: default; opacity: 0.4; box-shadow: none; }
 
-    .flight-power-button:hover:not(:disabled) {
-      box-shadow: 0 0 22px rgba(255, 150, 60, 0.6);
+    /* --- DOM overlay layer ------------------------------------------------ */
+    .kiro-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none; /* empty areas pass clicks to the canvas (flight) */
     }
+    .kiro-overlay.kiro-active { pointer-events: auto; }
 
-    .flight-power-button:disabled {
-      cursor: default;
-      opacity: 0.4;
-      box-shadow: none;
+    .kiro-panel {
+      pointer-events: auto;
+      background: var(--panel);
+      border: 1px solid var(--panel-edge);
+      border-radius: 12px;
+      padding: clamp(16px, 3vw, 32px);
+      max-width: 90%;
+      max-height: 88%;
+      overflow: auto;
+      text-align: center;
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
     }
+    .kiro-panel[hidden] { display: none; }
 
-    /* Accessibility settings (Req 12.6, 12.7, 12.8): audio mute and
-       reduced-motion toggles, keyboard-operable with a clearly visible focus
-       ring so keyboard users can always see what is focused. */
-    .settings {
+    .kiro-panel h2 { margin: 0 0 12px; font-size: clamp(1.4rem, 3vw, 2rem); color: #f6e9ff; }
+    .kiro-panel h3 { margin: 16px 0 8px; font-size: 1rem; color: var(--accent); }
+    .kiro-stats { color: var(--text-dim); margin: 8px 0 16px; font-size: 0.95rem; }
+    .kiro-msg { color: var(--teal); min-height: 1.2em; margin: 10px 0 0; }
+    .kiro-reason { color: var(--text-dim); font-size: 0.85rem; align-self: center; }
+
+    .kiro-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px 20px;
+      gap: 12px;
       justify-content: center;
       align-items: center;
-      max-width: 640px;
-      font-size: 0.9rem;
-      color: #c9b8e6;
+      margin: 12px 0;
     }
 
-    .settings fieldset {
-      border: 1px solid #3a2a5e;
+    .kiro-btn {
+      font: 600 1rem system-ui, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: #2a1a44;
+      border: 1px solid var(--panel-edge);
       border-radius: 8px;
-      padding: 10px 16px;
-      margin: 0;
+      padding: 10px 20px;
+      min-height: 44px;
+      cursor: pointer;
+      transition: background 120ms ease, transform 80ms ease;
+    }
+    .kiro-btn:hover { background: #3a2560; }
+    .kiro-btn:active { transform: translateY(1px); }
+    .kiro-btn.kiro-small { padding: 8px 14px; font-size: 0.9rem; min-height: 40px; }
+    .kiro-primary {
+      background: linear-gradient(180deg, #ffd27a, #ffb347);
+      color: #2a1636;
+      border-color: #c77d1f;
+    }
+    .kiro-primary:hover { background: linear-gradient(180deg, #ffdd94, #ffc266); }
+    .kiro-danger { border-color: var(--danger); color: #ffd4d4; }
+    .kiro-btn:disabled { opacity: 0.45; cursor: default; }
+
+    .kiro-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin: 12px 0;
+    }
+    .kiro-card {
       display: flex;
-      gap: 16px;
-      align-items: center;
-    }
-
-    .settings legend {
-      padding: 0 6px;
-      color: #ffb347;
-      font-weight: 600;
-    }
-
-    .settings label {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
+      flex-direction: column;
+      gap: 6px;
+      align-items: flex-start;
+      text-align: left;
+      padding: 12px;
+      min-height: 64px;
+      background: #22143c;
+      border: 2px solid var(--panel-edge);
+      border-radius: 10px;
+      color: var(--text);
       cursor: pointer;
     }
+    .kiro-card:hover { border-color: var(--teal); }
+    .kiro-card.kiro-selected { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(255,179,71,0.4); }
+    .kiro-card.kiro-equipped { background: #2d2250; }
+    .kiro-card-name { font-weight: 600; }
+    .kiro-card-status { font-size: 0.82rem; color: var(--text-dim); }
 
-    .settings input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      accent-color: #ffb347;
-      cursor: pointer;
+    .kiro-howto { text-align: left; color: var(--text-dim); font-size: 0.9rem; margin: 10px 0; }
+    .kiro-howto[hidden] { display: none; }
+    .kiro-progress { border-top: 1px solid var(--panel-edge); margin-top: 16px; padding-top: 8px; }
+    .kiro-settings-row {
+      display: flex; flex-wrap: wrap; gap: 12px 20px;
+      justify-content: center; align-items: center; margin: 8px 0;
     }
+    .kiro-settings-row label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+    .kiro-settings-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
 
-    /* A strong, consistent focus ring for EVERY interactive control so menus
-       are comfortably keyboard-operable with visible focus (Req 12.6). */
+    /* Strong, consistent focus ring on EVERY interactive control. */
+    .kiro-btn:focus-visible,
+    .kiro-card:focus-visible,
     .flight-power-button:focus-visible,
-    .settings label:focus-within,
-    .settings input:focus-visible,
+    .kiro-settings-row input:focus-visible,
     button:focus-visible {
-      outline: 3px solid #9ad0ff;
+      outline: 3px solid var(--teal);
       outline-offset: 2px;
-      border-radius: 6px;
     }
 
-    /* Respect the OS-level reduced-motion setting too: tone down transitions
-       so the preference is honored even before the in-game toggle is touched
-       (Req 12.8). The in-game toggle additionally gates canvas effects. */
     @media (prefers-reduced-motion: reduce) {
-      .flight-power-button {
-        transition: none;
-      }
+      .kiro-btn, .flight-power-button { transition: none; }
     }
   </style>
 </head>
 
 <body>
-  <h1>Kiro's Haunted Flight</h1>
+  <div class="topbar">
+    <h1>Kiro's Haunted Flight</h1>
+  </div>
 
-  <canvas id="game-canvas" width="960" height="640" aria-label="Game playfield"></canvas>
+  <div id="game-wrapper">
+    <canvas id="game-canvas" width="960" height="640" aria-label="Game playfield"></canvas>
+    <!-- The DOM overlay (menus/wardrobe/pause/results) is injected here by ui/overlay.js -->
+  </div>
 
   <div class="action-bar">
     <button id="flight-power-button" type="button" class="flight-power-button"
@@ -174,29 +236,6 @@
       Flight Power (E)
     </button>
   </div>
-
-  <section class="controls" aria-label="Controls">
-    <p>
-      <strong>Space</strong> or <strong>click</strong> the playfield to flap ·
-      <strong>E</strong> or the on-screen button for your spirit's flight power ·
-      <strong>P</strong> to pause ·
-      <strong>Q</strong> while paused to end the run
-    </p>
-  </section>
-
-  <section class="settings" aria-label="Accessibility settings">
-    <fieldset>
-      <legend>Settings</legend>
-      <label>
-        <input id="mute-toggle" type="checkbox" />
-        <span>Mute audio</span>
-      </label>
-      <label>
-        <input id="reduced-motion-toggle" type="checkbox" />
-        <span>Reduced motion</span>
-      </label>
-    </fieldset>
-  </section>
 
   <script type="module" src="./src/main.js"></script>
 </body>

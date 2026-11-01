@@ -1,18 +1,18 @@
-// main.js — the single browser entry module for Kiro's Haunted Flight.
+﻿// main.js â€” the single browser entry module for Kiro's Haunted Flight.
 //
 // This is the thin shell that wires the pure core into a running game:
 //
 //   index.html
-//     └─ main.js (this file; the ONLY browser-entry module — assumes a DOM)
-//          ├─ loop.js            fixed-timestep rAF driver
-//          ├─ state.js           FSM + three-clock dispatch
-//          │     ├─ systems/flight.js      physics + flap (stepFlight)
-//          │     ├─ systems/spawner.js     obstacles (called inside the FSM)
-//          │     ├─ systems/collision.js   swept hitbox vs pipes (stepped by FSM)
-//          │     └─ systems/scoring.js     Pipe_Score (stepScoring)
-//          ├─ input.js           keyboard/mouse → state-scoped intents
-//          ├─ render.js          Canvas layers (interpolation-only)
-//          └─ audio.js           sfx with graceful degradation
+//     â””â”€ main.js (this file; the ONLY browser-entry module â€” assumes a DOM)
+//          â”œâ”€ loop.js            fixed-timestep rAF driver
+//          â”œâ”€ state.js           FSM + three-clock dispatch
+//          â”‚     â”œâ”€ systems/flight.js      physics + flap (stepFlight)
+//          â”‚     â”œâ”€ systems/spawner.js     obstacles (called inside the FSM)
+//          â”‚     â”œâ”€ systems/collision.js   swept hitbox vs pipes (stepped by FSM)
+//          â”‚     â””â”€ systems/scoring.js     Pipe_Score (stepScoring)
+//          â”œâ”€ input.js           keyboard/mouse â†’ state-scoped intents
+//          â”œâ”€ render.js          Canvas layers (interpolation-only)
+//          â””â”€ audio.js           sfx with graceful degradation
 //
 // Everything with gameplay meaning lives in systems/* and the FSM. The shell's
 // only real responsibility beyond construction is ROUTING per-tick intents to
@@ -20,7 +20,7 @@
 // the FSM tick; UI intents (start, pause, resume, confirm/restart) drive the
 // FSM's control methods. The single-consumption barrier the FSM already calls
 // on every transition (inputQueue.transition) guarantees no input leaks across
-// a state change (Req 9.6, 9.12, 10.7) — the shell never has to re-implement it.
+// a state change (Req 9.6, 9.12, 10.7) â€” the shell never has to re-implement it.
 //
 // Node note: this module assumes a DOM. It must still pass `node --check`, so
 // all top-level work is deferred into `boot()`, which only runs under a real
@@ -49,7 +49,7 @@ import {
   applyPossessionChoice,
 } from "./systems/combat.js";
 import { battleActions } from "./ui/battle.js";
-import { ResultsAction } from "./ui/results.js";
+import { ResultsAction, resultsSummary } from "./ui/results.js";
 import { purchase, awardOrdinaryVictory } from "./systems/economy.js";
 import { finalizeRun } from "./systems/candy.js";
 import { loadSave, writeSave, exportSave, parseImport } from "./save.js";
@@ -63,8 +63,9 @@ import {
   IntentType,
 } from "./input.js";
 import { createRenderer } from "./render.js";
+import { createOverlay } from "./ui/overlay.js";
 import { startLoop } from "./loop.js";
-import { playSfx, initAudio, setMuted } from "./audio.js";
+import { playSfx, initAudio, setMuted, startMusic, stopMusic } from "./audio.js";
 import {
   createFeedbackBuffer,
   pushFeedback,
@@ -130,7 +131,7 @@ function boot() {
     // boss-presentation edge the scheduler reports (Active_Flight_Time crossing
     // the boss trigger) to build the Final_Boss battle; it is then stored on
     // runState.activeBattle so the SAME dedicated battle scene an ordinary
-    // encounter uses draws it, and routeBattleIntent resolves it (boss victory →
+    // encounter uses draws it, and routeBattleIntent resolves it (boss victory â†’
     // Results with outcome 'victory', Req 4.8, 5.20). Kept thin: just makeBoss +
     // startBattle, matching the ordinary beginEncounter path.
     makeBossBattle: (rs, cfg) => startBattle(rs, makeBoss(cfg), cfg),
@@ -144,11 +145,22 @@ function boot() {
       typeof document !== "undefined" && Boolean(document.hidden),
   });
 
-  // DOM input: Space/click → flap, E → flight power, P/Esc → pause, Enter →
+  // DOM input: Space/click â†’ flap, E â†’ flight power, P/Esc â†’ pause, Enter â†’
   // confirm. attachInput maps physical keys via DEFAULT_KEY_MAP and treats any
   // click on the canvas as a flight-area flap (UI buttons attach their own
   // handlers and never reach the flap path).
-  attachInput(inputQueue, { canvas });
+  attachInput(inputQueue, {
+    canvas,
+    // A canvas click is a flap ONLY in the flight-capable states. In menus /
+    // results / pause / battle / shop / wardrobe the overlay (or canvas UI)
+    // owns clicks, so a playfield click there must not flap (prompt §4). The
+    // overlay already blocks clicks that land on a panel; this adds the state
+    // gate for empty-area clicks.
+    isInFlightArea: () =>
+      fsm.state === States.Active_Flight_State ||
+      fsm.state === States.Ready_State ||
+      fsm.state === States.Main_Menu_State,
+  });
 
   // The visible on-screen Flight_Power button (Req 1.7). It enqueues a
   // FLIGHT_POWER intent exactly like the E key, but only while a power-providing
@@ -170,34 +182,72 @@ function boot() {
   // (index.html). They read from and write to the SAME saved prefs (save.prefs)
   // that audio.js and the renderer already honor, and persist on every change
   // so the preference survives a reload. Guarded for headless/missing elements.
-  const muteToggle = /** @type {HTMLInputElement|null} */ (
-    document.getElementById("mute-toggle")
-  );
-  const reducedMotionToggle = /** @type {HTMLInputElement|null} */ (
-    document.getElementById("reduced-motion-toggle")
-  );
+  // --- High-DPI canvas sizing + resize/fullscreen (prompt §5) --------------
+  //
+  // CSS display size (the wrapper) is separate from the backing-store pixels
+  // and the logical coordinates. The backing store is sized to the CSS box
+  // times devicePixelRatio for crisp rendering; the renderer letterboxes the
+  // fixed 960x640 logical playfield into whatever backing-store size it gets,
+  // so physics/collisions/scoring never change with display size.
+  const wrapper = document.getElementById("game-wrapper");
 
-  if (muteToggle) {
-    // Reflect the loaded pref into the control, then keep them in sync.
-    muteToggle.checked = Boolean(save.prefs && save.prefs.muted);
-    muteToggle.addEventListener("change", () => {
-      const muted = Boolean(muteToggle.checked);
-      save.prefs.muted = muted;
-      setMuted(muted); // audio.js honors it immediately (Req 12.4, 12.7)
-      persistSave();
-    });
+  function resizeCanvasToDisplay() {
+    if (!canvas) return;
+    const dpr =
+      typeof window !== "undefined" && window.devicePixelRatio
+        ? window.devicePixelRatio
+        : 1;
+    const rect = canvas.getBoundingClientRect
+      ? canvas.getBoundingClientRect()
+      : { width: CONFIG.playfield.width, height: CONFIG.playfield.height };
+    const cssW = Math.max(1, Math.round(rect.width || CONFIG.playfield.width));
+    const cssH = Math.max(1, Math.round(rect.height || CONFIG.playfield.height));
+    const bw = Math.max(1, Math.round(cssW * dpr));
+    const bh = Math.max(1, Math.round(cssH * dpr));
+    if (canvas.width !== bw || canvas.height !== bh) {
+      canvas.width = bw;
+      canvas.height = bh;
+    }
+  }
+  resizeCanvasToDisplay();
+  if (typeof window !== "undefined") {
+    window.addEventListener("resize", resizeCanvasToDisplay);
   }
 
-  if (reducedMotionToggle) {
-    reducedMotionToggle.checked = Boolean(
-      save.prefs && save.prefs.reducedMotion,
-    );
-    reducedMotionToggle.addEventListener("change", () => {
-      // The renderer reads save.prefs.reducedMotion each frame via its getter,
-      // so flipping this immediately tones down motion-heavy effects (Req 12.8).
-      save.prefs.reducedMotion = Boolean(reducedMotionToggle.checked);
-      persistSave();
-    });
+  // Fullscreen toggle (prompt §5): request/exit on the WRAPPER so the HUD +
+  // overlay are included, not just the canvas. Rejected/unsupported requests
+  // are swallowed so Escape stays usable and the game never breaks.
+  function toggleFullscreen() {
+    try {
+      const fsEl = document.fullscreenElement;
+      if (!fsEl) {
+        if (wrapper && typeof wrapper.requestFullscreen === "function") {
+          const p = wrapper.requestFullscreen();
+          if (p && typeof p.catch === "function") p.catch(() => {});
+        }
+      } else if (typeof document.exitFullscreen === "function") {
+        const p = document.exitFullscreen();
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      }
+    } catch {
+      // Fullscreen is best-effort; never let it interrupt play.
+    }
+  }
+  if (typeof document !== "undefined") {
+    document.addEventListener("fullscreenchange", resizeCanvasToDisplay);
+  }
+
+  // Preference setters shared by the overlay's Progress section. Both read/write
+  // the SAME saved prefs the renderer + audio already honor, apply immediately,
+  // and persist so the choice survives a reload (Req 12.7, 12.8).
+  function setMutedPref(muted) {
+    save.prefs.muted = Boolean(muted);
+    setMuted(save.prefs.muted);
+    persistSave();
+  }
+  function setReducedMotionPref(reduced) {
+    save.prefs.reducedMotion = Boolean(reduced);
+    persistSave();
   }
 
   // The transient player-feedback buffer (Req 12.2). The shell pushes cues at
@@ -229,10 +279,55 @@ function boot() {
     // The HUD reads the live feedback cues each frame (Req 12.2).
     feedback: () => feedback,
     // The Results screen shows the updated total Candy balance (Req 10.5),
-    // which lives on SaveData. Full Candy accrual + persistence is Milestone 5
-    // (candy.js / save.js); until then the minimal save exposes no `candy`
-    // field, so resultsSummary safely degrades the total to 0.
+    // which lives on SaveData.
     save: () => save,
+    // The Wardrobe draws a LIVE preview of the SELECTED hat (prompt §2); the
+    // selection lives in the DOM overlay (built just below). Reads it lazily so
+    // the preview tracks the player's card selection without equipping.
+    wardrobePreview: () => (overlay ? overlay.getWardrobeSelection() : null),
+  });
+
+  // --- Interactive DOM overlay (prompt §2, §4) -----------------------------
+  //
+  // Real, state-scoped HTML buttons over the canvas for the menu, results,
+  // pause, and wardrobe. Every action routes to the FSM / pure save+wardrobe
+  // functions below. Built after the renderer so its preview getter can read
+  // the overlay's current wardrobe selection.
+  let overlay = null;
+  overlay = createOverlay({
+    root: wrapper || document.body,
+    fsm,
+    getSave: () => save,
+    config: CONFIG,
+    actions: {
+      startRun: () => startRun(),
+      openWardrobe: () => fsm.openWardrobe(),
+      leaveWardrobe: () => {
+        if (fsm.state === States.Wardrobe) fsm.leaveWardrobe();
+      },
+      buyHat: (id) => buyWardrobeHat(id),
+      equipHat: (id) => equipWardrobeHat(id),
+      resume: () => {
+        if (fsm.state === States.Pause_State) fsm.requestResume();
+      },
+      endRun: () => {
+        if (fsm.state === States.Pause_State) {
+          const { finalized } = fsm.endRun();
+          if (finalized) persistSave();
+        }
+      },
+      restart: () => {
+        if (fsm.state === States.Results_State) fsm.restart(freshSeed());
+      },
+      toMainMenu: () => {
+        if (fsm.state === States.Results_State) fsm.toMainMenu();
+      },
+      exportProgress: () => exportProgress(),
+      importProgress: (file) => importProgressFile(file),
+      setMuted: (m) => setMutedPref(m),
+      setReducedMotion: (r) => setReducedMotionPref(r),
+      toggleFullscreen: () => toggleFullscreen(),
+    },
   });
 
   // --- Control-flow routing ---------------------------------------------------
@@ -271,8 +366,8 @@ function boot() {
     for (const intent of intents) {
       switch (fsm.state) {
         case States.Main_Menu_State: {
-          // From the menu a flap/confirm builds a fresh Run (Main_Menu → Ready)
-          // and immediately takes the first-flap edge (Ready → Active_Flight) so
+          // From the menu a flap/confirm builds a fresh Run (Main_Menu â†’ Ready)
+          // and immediately takes the first-flap edge (Ready â†’ Active_Flight) so
           // flight begins on the starting gesture.
           if (isFlap(intent) || intent.type === IntentType.UI_CONFIRM) {
             startRun();
@@ -286,7 +381,7 @@ function boot() {
 
         case States.Ready_State: {
           // A Run already exists (e.g. after a restart left us in Ready). The
-          // first flap begins flight (Ready → Active_Flight) without rebuilding,
+          // first flap begins flight (Ready â†’ Active_Flight) without rebuilding,
           // and applies the flap velocity on the same tick (Req 1.13).
           if (isFlap(intent) || intent.type === IntentType.UI_CONFIRM) {
             fsm.transition(States.Active_Flight_State);
@@ -309,9 +404,10 @@ function boot() {
             const rs = fsm.runState;
             if (rs && spiritProvidesFlightPower(rs.equippedSpirit)) {
               flight.flightPower = true;
+              if ((rs.hoverCooldown ?? 0) <= 0) playSfx("hover");
             }
           } else if (intent.type === IntentType.UI_PAUSE) {
-            fsm.pause(); // Active → Pause; barrier drops this intent
+            fsm.pause(); // Active â†’ Pause; barrier drops this intent
           }
           break;
         }
@@ -346,7 +442,7 @@ function boot() {
         case States.Pause_State: {
           // End Run (Req 9.8): the player deliberately gives up this Run. The
           // FSM finalizes it (awarding this Run's Candy + high score exactly
-          // once for a STARTED Run, nothing for an unstarted one — Req 9.9) and
+          // once for a STARTED Run, nothing for an unstarted one â€” Req 9.9) and
           // drops to Results_State. Persist the finalized save here so the
           // awarded Candy/high score survive a reload. Checked BEFORE resume so
           // the two pause actions never collide.
@@ -400,7 +496,7 @@ function boot() {
 
   /**
    * Axis-aligned overlap test between Ghosty's committed forgiving Hitbox and a
-   * flight-world symbol's body rect (CENTER x/y, w/h — the scheduler's
+   * flight-world symbol's body rect (CENTER x/y, w/h â€” the scheduler's
    * convention). Uses `hitboxFor` so contact reads the SAME forgiving rect as
    * collisions, never an enlarged bound.
    * @param {object} ghosty the committed Ghosty sub-state
@@ -450,7 +546,7 @@ function boot() {
   /**
    * Prepare and enter a Battle from flight contact (Req 4.7). Builds the enemy
    * and the fresh BattleState, stores the live battle on the RunState so the
-   * dedicated battle scene (render.js → ui/battle.js) can draw it, then freezes
+   * dedicated battle scene (render.js â†’ ui/battle.js) can draw it, then freezes
    * flight via the FSM (which also takes the separate flight-world snapshot,
    * Req 5.22).
    * @param {object} rs the active RunState
@@ -463,11 +559,11 @@ function boot() {
   }
 
   /**
-   * Resolve one in-battle input (Req 5.3–5.7, 5.24). While the battle is
+   * Resolve one in-battle input (Req 5.3â€“5.7, 5.24). While the battle is
    * ongoing, map the player's chosen action, resolve it (player acts first),
-   * and — if a turn was consumed and the battle is still going — resolve the
+   * and â€” if a turn was consumed and the battle is still going â€” resolve the
    * enemy's response. When the battle has ended, a confirm advances out of it:
-   * victory → award Soul_Coins then Reward_State; defeat → Results_State.
+   * victory â†’ award Soul_Coins then Reward_State; defeat â†’ Results_State.
    * Battle_HP and the enemy HP live on the RunState / battle so both HP displays
    * stay truthful.
    * @param {{ type: string }} intent
@@ -538,7 +634,7 @@ function boot() {
 
     // If the player consumed a turn and the battle is still ongoing, the enemy
     // responds (resolveEnemyTurn is a no-op if the battle ended on the player
-    // turn, so calling it unconditionally is safe — Req 5.14).
+    // turn, so calling it unconditionally is safe â€” Req 5.14).
     if (nextBattle.phase === "enemy") {
       const afterEnemy = resolveEnemyTurn(nextBattle, nextRun, CONFIG);
       nextBattle = afterEnemy.battle;
@@ -563,13 +659,16 @@ function boot() {
     const healed = Math.max(0, Math.round(playerHpAfter - playerHpBefore));
     if (dealt > 0) {
       emit(FeedbackKind.BATTLE_ACTION, `Dealt ${dealt} damage`);
+      playSfx("battle_hit");
     } else if (healed > 0) {
       emit(FeedbackKind.REWARD, `Healed ${healed} Battle HP`);
+      playSfx("heal");
     }
     if (taken > 0) {
       emit(FeedbackKind.BATTLE_ACTION, `Took ${taken} damage`, {
         severity: "bad",
       });
+      playSfx("battle_hurt");
     }
   }
 
@@ -577,7 +676,7 @@ function boot() {
    * Translate an input intent into a battle action (Req 5.3). A UI_SELECT intent
    * picks the Nth action from the same {@link battleActions} list the battle
    * scene draws, so what the player sees numbered is exactly what a number key
-   * selects — including the equipped Spirit's move (Storm_Bat Lightning /
+   * selects â€” including the equipped Spirit's move (Storm_Bat Lightning /
    * Pumpkin_Guardian Fortified Defend), routed as {@link PlayerActions.SpiritMove}.
    * A plain confirm/flap defaults to Attack so the battle is always resolvable.
    *
@@ -615,9 +714,9 @@ function boot() {
    * Resolve one in-Results input (Req 10.6, 10.7). The Results screen offers
    * three actions in a fixed order matching the Results view:
    *
-   *   0 → Restart    (Results → Ready; the first flap begins the fresh Run)
-   *   1 → Main Menu  (Results → Main_Menu)
-   *   2 → Wardrobe   (Results → Wardrobe)
+   *   0 â†’ Restart    (Results â†’ Ready; the first flap begins the fresh Run)
+   *   1 â†’ Main Menu  (Results â†’ Main_Menu)
+   *   2 â†’ Wardrobe   (Results â†’ Wardrobe)
    *
    * A number-key pick (UI_SELECT) chooses by index; a plain confirm/flap
    * defaults to Restart so the screen is always actionable. Each FSM method
@@ -655,11 +754,15 @@ function boot() {
    * @param {{ type: string }} intent
    */
   function routeWardrobeIntent(intent) {
-    if (
-      intent.type === IntentType.UI_PAUSE ||
-      intent.type === IntentType.UI_CONFIRM ||
-      isFlap(intent)
-    ) {
+    // Number keys select a card for PREVIEW only (never buy) (prompt §4).
+    if (intent.type === IntentType.UI_SELECT && overlay) {
+      overlay.selectByIndex(intent.index);
+      return;
+    }
+    // Escape returns to the menu. (Enter/Space on a focused overlay button are
+    // intercepted by the overlay and never reach here, so they activate the
+    // button only — they do not also leave the wardrobe.)
+    if (intent.type === IntentType.UI_PAUSE) {
       fsm.leaveWardrobe(); // Wardrobe → Main Menu; barrier drops the intent
     }
   }
@@ -669,10 +772,10 @@ function boot() {
    * already granted on the battle-victory edge; here the player answers the
    * Possession offer stored on `rs.pendingOffer`:
    *
-   *   - option 1 / UI_CONFIRM / flap → REPLACE: possess the defeated enemy's
+   *   - option 1 / UI_CONFIRM / flap â†’ REPLACE: possess the defeated enemy's
    *     Spirit (which enforces the single-equipped rule, the one-time
    *     Pumpkin_Guardian Shield gift, and never refills resources).
-   *   - option 2 → DECLINE: keep the current Spirit, change nothing.
+   *   - option 2 â†’ DECLINE: keep the current Spirit, change nothing.
    *
    * Either choice clears the offer and resumes flight via the checkpoint path
    * (so the confirming input cannot leak into flight, Req 9.6). When there is
@@ -687,7 +790,7 @@ function boot() {
     if (!rs) return;
     const offer = rs.pendingOffer || null;
 
-    // No offer to answer: a confirm/flap just leaves (Req 6.1 — boss or an
+    // No offer to answer: a confirm/flap just leaves (Req 6.1 â€” boss or an
     // enemy with no spirit reward offers no possession).
     if (!offer) {
       if (isFlap(intent) || intent.type === IntentType.UI_CONFIRM) {
@@ -715,6 +818,7 @@ function boot() {
       const spiritName =
         offer.offered && offer.offered.name ? offer.offered.name : "a Spirit";
       emit(FeedbackKind.POSSESSION, `Possessed ${spiritName}`);
+      playSfx("possession");
     }
     leaveReward(rs);
   }
@@ -740,14 +844,14 @@ function boot() {
     const rs = fsm.runState;
     if (!rs) return;
     if (intent.type === IntentType.UI_CONFIRM || isFlap(intent)) {
-      fsm.resumeToFlight(); // Shop → checkpoint → Resume_Countdown → flight
+      fsm.resumeToFlight(); // Shop â†’ checkpoint â†’ Resume_Countdown â†’ flight
     }
   }
 
   /**
    * Buy one unit of a shop item (invoked by an on-screen shop button / key).
    * Thin wrapper over the pure economy `purchase`; the economy enforces
-   * affordability, caps, and single-purchase-per-action (Req 7.6–7.8, 7.12).
+   * affordability, caps, and single-purchase-per-action (Req 7.6â€“7.8, 7.12).
    * @param {string} itemId
    * @returns {boolean} whether the purchase applied
    */
@@ -755,13 +859,13 @@ function boot() {
     const rs = fsm.runState;
     if (!rs || fsm.state !== States.Shop_State) return false;
     const { ok } = purchase(rs, itemId, CONFIG);
-    if (ok) emit(FeedbackKind.PURCHASE, "Purchased"); // Req 12.2 purchase cue
+    if (ok) { emit(FeedbackKind.PURCHASE, "Purchased"); playSfx("purchase"); } // Req 12.2 purchase cue
     return ok;
   }
 
   /**
    * Use one potion in the shop (invoked by an on-screen button / the U key).
-   * No combat turn, no Candy time (Req 7.13) — guaranteed by passing battle =
+   * No combat turn, no Candy time (Req 7.13) â€” guaranteed by passing battle =
    * null to the pure `usePotion`.
    * @returns {boolean} whether a potion was consumed
    */
@@ -773,6 +877,7 @@ function boot() {
       rs.battleHp = result.runState.battleHp;
       rs.items = result.runState.items;
       emit(FeedbackKind.REWARD, "Used a Potion");
+      playSfx("heal");
     }
     return result.ok;
   }
@@ -815,7 +920,7 @@ function boot() {
   function buyWardrobeHat(hatId) {
     if (fsm.state !== States.Wardrobe) return false;
     const { ok } = buyHat(save, hatId, CONFIG);
-    if (ok) persistSave();
+    if (ok) { persistSave(); playSfx("purchase"); }
     return ok;
   }
 
@@ -851,7 +956,7 @@ function boot() {
    * Export the current SaveData as a portable JSON payload (Req 11.6, 11.7),
    * then trigger a browser download when a DOM is present. Allowed only outside
    * an active Run. The payload is canonical (sanitized) and carries only
-   * persistent progress + prefs — never any unfinished-Run state (Req 11.12).
+   * persistent progress + prefs â€” never any unfinished-Run state (Req 11.12).
    * @returns {{ text: string, filename: string } | null} the payload, or null
    *   when not permitted
    */
@@ -882,8 +987,8 @@ function boot() {
   }
 
   /**
-   * Import a portable save file, following the validate → preview → confirm →
-   * replace → save-immediately flow (Req 11.8–11.11). Allowed only outside an
+   * Import a portable save file, following the validate â†’ preview â†’ confirm â†’
+   * replace â†’ save-immediately flow (Req 11.8â€“11.11). Allowed only outside an
    * active Run. The STRICT `parseImport` validates the WHOLE file up front; a
    * rejected import changes nothing (Req 11.9). On accept, the validated
    * SaveData REPLACES (never merges) the in-memory save and is written
@@ -906,7 +1011,7 @@ function boot() {
     const parsed = parseImport(text, CONFIG);
     if (!parsed.ok) return { ok: false, error: parsed.error };
 
-    // preview → confirm: let the caller inspect the validated save and veto.
+    // preview â†’ confirm: let the caller inspect the validated save and veto.
     if (typeof onPreview === "function" && !onPreview(parsed.save)) {
       return { ok: false, error: "Import cancelled." };
     }
@@ -920,9 +1025,45 @@ function boot() {
   }
 
   /**
+   * Import from a chosen File (the overlay's file picker). Reads the file text,
+   * then runs the same validate -> preview -> confirm -> replace flow: the
+   * preview shows WHAT will be replaced (current vs incoming high score / candy
+   * / hats) and requires an explicit window.confirm before replacing. A
+   * cancelled or invalid file leaves progress unchanged (Req 11.8-11.11).
+   * @param {File} file
+   * @returns {void}
+   */
+  function importProgressFile(file) {
+    if (!file || typeof file.text !== "function") return;
+    file.text().then((text) => {
+      const result = importProgress(text, (incoming) => {
+        // preview -> confirm: show what the replace will change.
+        const msg =
+          "Importing will REPLACE your current progress.\n\n" +
+          `High score: ${save.highScore} -> ${incoming.highScore}\n` +
+          `Candy: ${save.candy} -> ${incoming.candy}\n` +
+          `Hats owned: ${(save.ownedHats || []).length} -> ${(incoming.ownedHats || []).length}\n\n` +
+          "Continue?";
+        return typeof window !== "undefined" && typeof window.confirm === "function"
+          ? window.confirm(msg)
+          : true;
+      });
+      if (overlay && typeof overlay.setWardrobeMessage === "function") {
+        overlay.setWardrobeMessage(result.ok ? "Progress imported." : result.error || "Import failed.");
+      }
+      if (!result.ok && typeof window !== "undefined" && typeof window.alert === "function" && result.error) {
+        // Surface a validation failure without interrupting the game loop.
+        try { window.alert(result.error); } catch { /* ignore */ }
+      }
+    }).catch(() => {
+      // A read failure leaves progress unchanged and never throws into the loop.
+    });
+  }
+
+  /**
    * Begin a Run: recreate the per-Run RNG so spawning replays from the Run's
-   * own seed, start a new Run (Main_Menu → Ready), then take the first flap edge
-   * (Ready → Active_Flight) so flight begins immediately on the starting gesture.
+   * own seed, start a new Run (Main_Menu â†’ Ready), then take the first flap edge
+   * (Ready â†’ Active_Flight) so flight begins immediately on the starting gesture.
    */
   function startRun() {
     const seed = freshSeed();
@@ -959,14 +1100,16 @@ function boot() {
     const score = typeof rs.pipeScore === "number" ? rs.pipeScore : 0;
     if (score > prevPipeScore) {
       emit(FeedbackKind.SCORE, `Score ${score}`);
+      playSfx("score");
     }
     prevPipeScore = score;
 
     const shields = typeof rs.shieldCharges === "number" ? rs.shieldCharges : 0;
     if (shields < prevShieldCharges) {
-      // A charge was consumed absorbing a pipe hit — the Shield broke (Req 3.x,
+      // A charge was consumed absorbing a pipe hit â€” the Shield broke (Req 3.x,
       // 12.2). Clear shield-break feedback so the save is read as earned.
       emit(FeedbackKind.SHIELD_BREAK, "Shield broke!");
+      playSfx("shield_break");
     }
     prevShieldCharges = shields;
 
@@ -988,14 +1131,14 @@ function boot() {
   /**
    * Per-tick input source for the loop. Also observes the edge INTO
    * Results_State to (a) fire the game-over sfx once and (b) finalize the Run
-   * on EVERY Run-ending edge — a flight death (ground/ceiling/pipe), a battle
-   * defeat, or a boss victory — not just the explicit End Run from pause.
+   * on EVERY Run-ending edge â€” a flight death (ground/ceiling/pipe), a battle
+   * defeat, or a boss victory â€” not just the explicit End Run from pause.
    *
    * finalizeRun (candy.js) is the single idempotent award path: it adds this
    * Run's Candy and bumps the saved high score EXACTLY once, guarded by the
    * one-shot `runState.finalized` latch (Req 8.4, 8.6, 11.13, 11.14). End Run
    * from pause already called it via `fsm.endRun()`, so when we reach Results
-   * that way the latch is set and this call is a no-op — the award never
+   * that way the latch is set and this call is a no-op â€” the award never
    * doubles. Whenever this edge actually performs the award we persist the full
    * SaveData so the earned Candy and high score survive a reload.
    * @returns {{ flap: boolean, flightPower: boolean }}
@@ -1005,8 +1148,23 @@ function boot() {
     observeFlightFeedback();
     const nowResults = fsm.state === States.Results_State;
     if (nowResults && !wasResults) {
-      playSfx("game_over");
+      const rs = fsm.runState;
+      const victory = Boolean(rs && (rs.bossDefeated || rs.outcome === "victory"));
+      // Boss victory gets the victory fanfare; every other end gets game_over.
+      playSfx(victory ? "victory" : "game_over");
       finalizeAndPersist();
+      // Cache a compact results line + outcome for the DOM overlay to show.
+      try {
+        const summary = resultsSummary(rs, save, CONFIG);
+        save.__lastOutcome = victory ? "victory" : "defeat";
+        save.__resultsLine =
+          `${summary.status}` +
+          (summary.cause ? ` — ${summary.cause}` : "") +
+          `  ·  Score ${summary.pipeScore}  ·  Time ${summary.activeFlightTimeLabel}` +
+          `  ·  Candy earned ${summary.candyEarned}  ·  Total ${summary.totalCandy}`;
+      } catch {
+        save.__resultsLine = "";
+      }
     }
     wasResults = nowResults;
     return flight;
@@ -1017,7 +1175,7 @@ function boot() {
    * SaveData if the award actually landed (first finalize of a STARTED Run).
    * Idempotent: a Run already finalized (e.g. End Run from pause) returns
    * `finalized: false` and we skip the redundant write. An unstarted Run awards
-   * nothing (candy.js returns finalized but adds no Candy) — we still persist
+   * nothing (candy.js returns finalized but adds no Candy) â€” we still persist
    * nothing extra because its finalize happens through endRun(), not here.
    * Persistence failures are swallowed by writeSave and never interrupt play.
    */
@@ -1035,13 +1193,20 @@ function boot() {
   /**
    * Persist the whole in-memory SaveData (high score, Candy, owned/equipped
    * Hats, prefs) to browser-local storage via save.js `writeSave` (Req 11.1,
-   * 11.4). writeSave never throws — a storage failure is reported as
+   * 11.4). writeSave never throws â€” a storage failure is reported as
    * `{ ok: false }` and swallowed here so a persistence problem never
    * interrupts the Game (Req 11.5).
    * @returns {boolean} whether the write succeeded
    */
   function persistSave() {
-    const { ok } = writeSave(save);
+    // Write a copy WITHOUT the transient overlay-only fields (prefixed `__`),
+    // so they never land in localStorage or a later export. sanitizeSave would
+    // drop them on load anyway; this keeps the stored JSON clean.
+    const toStore = {};
+    for (const k of Object.keys(save)) {
+      if (!k.startsWith("__")) toStore[k] = save[k];
+    }
+    const { ok } = writeSave(toStore);
     return ok;
   }
 
@@ -1063,7 +1228,7 @@ function boot() {
   /**
    * Surface Hover readiness on the on-screen button each frame (Req 1.7): it is
    * enabled only while a power-providing Spirit is equipped AND the Hover
-   * cooldown has elapsed, dimmed otherwise. This is display-only — it never
+   * cooldown has elapsed, dimmed otherwise. This is display-only â€” it never
    * changes physics; the authoritative cooldown gate lives in stepFlight.
    */
   function updateFlightPowerButton() {
@@ -1076,12 +1241,48 @@ function boot() {
     flightPowerButton.disabled = !ready;
   }
 
+  // Background music follows the FSM: play during an active Run (flight and the
+  // in-Run sub-screens), stop on the menu / results so there is no stacked or
+  // out-of-place track. startMusic/stopMusic are idempotent and gated on the
+  // first-gesture unlock + mute inside audio.js, so this is safe to call every
+  // frame (prompt §7).
+  const MUSIC_STATES = new Set([
+    States.Ready_State,
+    States.Active_Flight_State,
+    States.Battle_State,
+    States.Reward_State,
+    States.Shop_State,
+    States.Pause_State,
+    States.Resume_Countdown_State,
+  ]);
+  let musicOn = false;
+  function syncMusic() {
+    const want = MUSIC_STATES.has(fsm.state);
+    if (want && !musicOn) { startMusic(); musicOn = true; }
+    else if (!want && musicOn) { stopMusic(); musicOn = false; }
+  }
+
+  // The on-screen Flight_Power button is only meaningful during flight; hide it
+  // whenever an overlay panel is up so it never overlaps a menu.
+  function updateActionBarVisibility() {
+    const bar = document.querySelector(".action-bar");
+    if (!bar) return;
+    const inFlight =
+      fsm.state === States.Active_Flight_State ||
+      fsm.state === States.Ready_State ||
+      fsm.state === States.Resume_Countdown_State;
+    bar.style.visibility = inFlight ? "visible" : "hidden";
+  }
+
   // Start the fixed-timestep loop. The FSM advances in whole FIXED_DT steps;
   // the renderer draws once per frame with the render-only interpolation alpha.
   startLoop(
     fsm,
     (stateName, alpha) => {
       updateFlightPowerButton();
+      updateActionBarVisibility();
+      if (overlay) overlay.sync();
+      syncMusic();
       renderer(fsm, alpha);
     },
     {
@@ -1119,3 +1320,14 @@ if (typeof document !== "undefined") {
     boot();
   }
 }
+
+
+
+
+
+
+
+
+
+
+

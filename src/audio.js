@@ -49,6 +49,12 @@ let unlocked = false;
 /** Current mute preference. When true, playback is skipped. */
 let muted = false;
 
+/** The single looping music element, or null until first requested. */
+let musicEl = null;
+
+/** Whether the game WANTS music playing (independent of unlock/mute gating). */
+let musicWanted = false;
+
 /** Whether we've attempted to wire up the one-shot unlock listeners. */
 let unlockListenersAttached = false;
 
@@ -299,6 +305,7 @@ export function initAudio(prefs) {
 }
 
 export default { playSfx, setMuted, isMuted, isUnlocked, applyPrefs, initAudio, startMusic, stopMusic, isMusicWanted };
+
 
 
 

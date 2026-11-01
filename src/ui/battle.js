@@ -1,4 +1,4 @@
-// ui/battle.js — the dedicated battle scene view (thin DOM/IO module).
+﻿// ui/battle.js â€” the dedicated battle scene view (thin DOM/IO module).
 //
 // This is a UI view module in the same spirit as ui/hud.js and ui/menu.js: it
 // only draws to a Canvas 2D context handed to it and holds no gameplay state.
@@ -8,7 +8,7 @@
 // What the dedicated battle scene shows (Req 5.21, 12.11):
 //   - Ghosty with the equipped Hat and Spirit appearance,
 //   - the enemy or Final_Boss (labeled placeholder art in the soft illustrated
-//     Halloween style — missing enemy/boss art must never block the loop),
+//     Halloween style â€” missing enemy/boss art must never block the loop),
 //   - BOTH Battle_HP displays (player and enemy),
 //   - the enemy intent and any special-attack warning (telegraph),
 //   - the Attack / Defend / Use Item actions plus any applicable Spirit action,
@@ -18,7 +18,7 @@
 // routes Battle_State here instead of drawing pipes/Ghosty-in-flight, and the
 // frozen flight world is retained untouched on the RunState so it restores
 // exactly when the battle ends. This module never reads or writes the flight
-// `pipes`/`ghosty` fields — it only reads combat state.
+// `pipes`/`ghosty` fields â€” it only reads combat state.
 //
 // Pre-contact enemy info (Req 4.6) is also presented here via
 // {@link describeEnemy}, so the HUD/flight overlay can show the enemy's
@@ -39,6 +39,14 @@
  * @param {{ type?: string, isBoss?: boolean }} enemy
  * @returns {string}
  */
+import {
+  resolveAppearance,
+  spriteDrawRect,
+  standaloneHatRect,
+  APPEARANCE_GEOMETRY,
+} from "../appearance.js";
+import { loadImage, imageReady, getImage, firstReady } from "../assets.js";
+
 export function enemyDisplayName(enemy) {
   if (!enemy) return "Enemy";
   if (enemy.isBoss) return "The Final Boss";
@@ -97,7 +105,7 @@ export function relativeDanger(enemy, config) {
 
 /**
  * Build the pre-contact enemy readout (Req 4.6): identity, relative danger, and
- * the expected reward or available Spirit. Pure — returns a plain descriptor the
+ * the expected reward or available Spirit. Pure â€” returns a plain descriptor the
  * flight overlay (or a test) can render however it likes. Shown BEFORE contact,
  * so it reads from the enemy template (type/isBoss), never from a live battle.
  *
@@ -121,7 +129,7 @@ export function describeEnemy(enemy, config) {
  * Defend, and Use Item; a Spirit move is appended WHERE the equipped Spirit
  * provides one. Pure and DOM-free so the scene draw and tests share one source
  * of truth for which buttons appear. The Spirit-move availability only reflects
- * whether the Spirit HAS a move — per-turn cooldown gating is combat.js's job
+ * whether the Spirit HAS a move â€” per-turn cooldown gating is combat.js's job
  * and is surfaced as a disabled/enabled flag by later tasks.
  *
  * @param {object} runState the active RunState (reads `equippedSpirit`)
@@ -146,7 +154,7 @@ export function battleActions(runState) {
         : true;
     actions.push({ id: "spirit", label: "Lightning", available: ready });
   } else if (spirit === "pumpkin_guardian") {
-    // Fortified Defend has no cooldown — always available when equipped.
+    // Fortified Defend has no cooldown â€” always available when equipped.
     actions.push({ id: "spirit", label: "Fortified Defend", available: true });
   }
   return actions;
@@ -172,7 +180,7 @@ export function enemyIntent(battle) {
   if (battle.bossSpecialTelegraphed) {
     return {
       text: "The enemy is charging a special attack!",
-      warning: "Special attack incoming next turn — Defend to reduce it.",
+      warning: "Special attack incoming next turn â€” Defend to reduce it.",
     };
   }
   return { text: "The enemy is preparing to attack.", warning: null };
@@ -244,7 +252,7 @@ function drawHpBar(ctx, x, y, w, label, hp, maxHp, fill) {
  * Draw a soft illustrated placeholder for a battle character (Ghosty or the
  * enemy) centered at (cx, cy). Missing character art must never block the loop
  * (Req 12.1 / 12.23), so a clean labeled silhouette stands in. A Hat is drawn
- * ON TOP when `withHat` is set, so the Hat stays visible in battle too — hats
+ * ON TOP when `withHat` is set, so the Hat stays visible in battle too â€” hats
  * are cosmetic and never clipped by a possessed look (steering: hats stay
  * visible across every spirit appearance).
  *
@@ -350,7 +358,61 @@ function spiritTintFor(spirit) {
  * @param {object} config the frozen CONFIG (playfield dimensions)
  * @returns {void}
  */
-export function drawBattle(ctx, runState, battle, config) {
+/**
+ * Draw an enemy/boss sprite centered at (cx, cy), fit (aspect-preserved) into a
+ * target box of side `size`. Returns true if a real sprite was drawn, false if
+ * the art is not ready (so the caller draws the placeholder). Fully guarded.
+ */
+function drawBattleSprite(ctx, file, cx, cy, size) {
+  loadImage(file);
+  if (!imageReady(file)) return false;
+  const img = getImage(file);
+  if (!img) return false;
+  const natW = img.naturalWidth || img.width || size;
+  const natH = img.naturalHeight || img.height || size;
+  const fit = Math.min(size / natW, size / natH);
+  const dw = natW * fit;
+  const dh = natH * fit;
+  try {
+    ctx.drawImage(img, cx - dw / 2, cy - dh / 2, dw, dh);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Draw Ghosty in the battle scene using the SHARED appearance resolver, so the
+ * possessed body + ACTUAL equipped hat match flight (prompt §3). The body
+ * reference is scaled so the optical body is ~`bodyW` wide; a tall hat never
+ * resizes it. Returns true if real art was drawn, false to use the placeholder.
+ */
+function drawBattleGhosty(ctx, cx, cy, bodyW, equippedHat, spirit) {
+  const plan = resolveAppearance(equippedHat, spirit);
+  for (const layer of plan.layers) for (const f of layer.fallbacks) loadImage(f);
+  const bodyFile = firstReady(plan.bodyFallbacks);
+  const bodyMeta = bodyFile && APPEARANCE_GEOMETRY.bodyReference[bodyFile];
+  if (!bodyFile || !bodyMeta) return false;
+  // Scale the logical 32px body up to the scene body width for a readable size.
+  const sceneBodyW = bodyW * 1.6;
+  const sceneBodyH = sceneBodyW * (39 / 32);
+  const rect = spriteDrawRect(bodyFile, cx, cy, sceneBodyW, sceneBodyH);
+  const img = getImage(bodyFile);
+  if (!rect || !img) return false;
+  try {
+    ctx.drawImage(img, rect.dx, rect.dy, rect.dw, rect.dh);
+    if (plan.possessed && plan.standaloneHatFile && imageReady(plan.standaloneHatFile)) {
+      const hatRect = standaloneHatRect(plan.standaloneHatFile, bodyFile, rect, bodyMeta, sceneBodyW);
+      const hatImg = getImage(plan.standaloneHatFile);
+      if (hatRect && hatImg) ctx.drawImage(hatImg, hatRect.dx, hatRect.dy, hatRect.dw, hatRect.dh);
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function drawBattle(ctx, runState, battle, config, save = null) {
   if (!ctx || typeof ctx.fillRect !== "function") return;
   if (!battle) return;
 
@@ -368,34 +430,57 @@ export function drawBattle(ctx, runState, battle, config) {
 
   ctx.save();
 
-  // 1. Backdrop — a dedicated battle sky, clearly not the flight world.
-  const sky = ctx.createLinearGradient(0, 0, 0, height);
-  sky.addColorStop(0, SCENE.skyTop);
-  sky.addColorStop(1, SCENE.skyBottom);
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, width, height);
+  // 1. Backdrop. Prefer the illustrated battle plate; else a gradient + moon.
+  loadImage("background_battle.png");
+  let bgDrawn = false;
+  if (imageReady("background_battle.png")) {
+    const bg = getImage("background_battle.png");
+    if (bg) {
+      try { ctx.drawImage(bg, 0, 0, width, height); bgDrawn = true; } catch { bgDrawn = false; }
+    }
+  }
+  if (!bgDrawn) {
+    const sky = ctx.createLinearGradient(0, 0, 0, height);
+    sky.addColorStop(0, SCENE.skyTop);
+    sky.addColorStop(1, SCENE.skyBottom);
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = SCENE.moon;
+    ctx.beginPath();
+    ctx.arc(width * 0.5, height * 0.18, 34, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
-  // Moon.
-  ctx.fillStyle = SCENE.moon;
-  ctx.beginPath();
-  ctx.arc(width * 0.5, height * 0.18, 34, 0, Math.PI * 2);
-  ctx.fill();
-
-  // 2. Combatants — Ghosty on the left, enemy/boss on the right.
+  // 2. Combatants â€” Ghosty on the left, enemy/boss on the right.
   const groundY = height * 0.58;
-  drawCharacter(ctx, width * 0.28, groundY, 46, {
-    body: SCENE.ghostBody,
-    edge: SCENE.ghostEdge,
-    withHat: true, // hats are cosmetic and always visible in battle
-    spiritTint: spiritTintFor(spirit),
-  });
-  // The boss reads larger so its distinctive presence is obvious (Req 5.12).
+  const equippedHat = save && typeof save.equippedHat === "string" ? save.equippedHat : "none";
+
+  // Ghosty: draw the SAME whole-sprite appearance as flight (shared resolver),
+  // so possession + the ACTUAL equipped hat read consistently in battle too
+  // (prompt §3 — no generic hat). Falls back to the labeled placeholder.
+  if (!drawBattleGhosty(ctx, width * 0.28, groundY, 46, equippedHat, spirit)) {
+    drawCharacter(ctx, width * 0.28, groundY, 46, {
+      body: SCENE.ghostBody,
+      edge: SCENE.ghostEdge,
+      withHat: equippedHat !== "none",
+      spiritTint: spiritTintFor(spirit),
+    });
+  }
+
+  // Enemy / boss: the boss reads larger (Req 5.12). Prefer real art.
   const enemyR = enemy.isBoss ? 64 : 46;
-  drawCharacter(ctx, width * 0.72, groundY, enemyR, {
-    body: SCENE.enemyBody,
-    edge: SCENE.enemyEdge,
-    withHat: false,
-  });
+  const enemyFile = enemy.isBoss
+    ? "boss_final.png"
+    : enemy.type === "B"
+      ? "enemy_pumpkin_guardian.png"
+      : "enemy_storm_bat.png";
+  if (!drawBattleSprite(ctx, enemyFile, width * 0.72, groundY, enemyR * 2.2)) {
+    drawCharacter(ctx, width * 0.72, groundY, enemyR, {
+      body: SCENE.enemyBody,
+      edge: SCENE.enemyEdge,
+      withHat: false,
+    });
+  }
 
   // Enemy name label (identity readable in-scene too).
   ctx.font = "600 18px 'Segoe UI', system-ui, sans-serif";
@@ -438,7 +523,7 @@ export function drawBattle(ctx, runState, battle, config) {
     ctx.fillText(intent.warning, width * 0.5, height * 0.34);
   }
 
-  // 5. Action list — a readable panel of the available actions (Req 5.3).
+  // 5. Action list â€” a readable panel of the available actions (Req 5.3).
   const actions = battleActions(runState);
   const panelY = height * 0.72;
   const panelH = height * 0.24;
@@ -464,7 +549,7 @@ export function drawBattle(ctx, runState, battle, config) {
     ctx.globalAlpha = 1;
   });
 
-  // 6. Readable per-action feedback — the tail of the battle log (Req 5.9).
+  // 6. Readable per-action feedback â€” the tail of the battle log (Req 5.9).
   ctx.textAlign = "left";
   ctx.font = "500 15px 'Segoe UI', system-ui, sans-serif";
   ctx.fillStyle = SCENE.textDim;
@@ -491,7 +576,7 @@ export function drawBattle(ctx, runState, battle, config) {
 
 /**
  * Turn a Possession offer (from combat.js's `possessionOffer`) into readable
- * lines for the Reward_State screen (Req 6.1, 6.2, 6.6). Pure — returns plain
+ * lines for the Reward_State screen (Req 6.1, 6.2, 6.6). Pure â€” returns plain
  * strings so the draw function and tests share one source of truth. The lines
  * spell out the offered Spirit's name, BOTH its one Flight benefit and one
  * combat benefit (so the choice is informed, Req 6.6), the current Spirit being
@@ -523,7 +608,7 @@ export function possessionOfferLines(offer) {
  * usable 2D context, or when there is no offer. Draws a soft-illustrated panel
  * explaining the offered Spirit's one Flight benefit and one combat benefit and
  * the replace/decline choices, so the Player decides with both benefits in view
- * BEFORE possessing. Presentation only — the choice is applied by combat.js's
+ * BEFORE possessing. Presentation only â€” the choice is applied by combat.js's
  * `applyPossessionChoice` via the FSM.
  *
  * @param {CanvasRenderingContext2D|null|undefined} ctx the 2D context
@@ -590,3 +675,6 @@ export default {
   possessionOfferLines,
   drawPossessionOffer,
 };
+
+
+

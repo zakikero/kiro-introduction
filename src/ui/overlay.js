@@ -318,12 +318,30 @@ export function createOverlay(opts) {
     if (container.parentNode) container.parentNode.removeChild(container);
   }
 
+  /**
+   * Select a wardrobe card by its 0-based index (number-key support). Only
+   * changes the PREVIEW selection — never buys or equips (prompt §4). No-op
+   * outside the Wardrobe or for an out-of-range index.
+   * @param {number} i
+   */
+  function selectByIndex(i) {
+    if (fsm.state !== States.Wardrobe) return;
+    const rows = hatCatalog(getSave(), config);
+    if (i >= 0 && i < rows.length) {
+      wardrobeSelection = rows[i].id;
+      wardrobeMessage = "";
+      renderWardrobe();
+    }
+  }
+
   return {
     sync,
     destroy,
+    selectByIndex,
     getWardrobeSelection: () => wardrobeSelection,
     setWardrobeMessage: (m) => { wardrobeMessage = String(m || ""); },
   };
 }
 
 export default { createOverlay };
+

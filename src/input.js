@@ -1,4 +1,4 @@
-// input.js — raw keyboard/mouse events → state-scoped, per-tick game intents.
+﻿// input.js â€” raw keyboard/mouse events â†’ state-scoped, per-tick game intents.
 //
 // This module is deliberately split in two:
 //
@@ -26,7 +26,7 @@
 // `transition()` on the queue at every state change. That drops any intent not
 // yet consumed (the barrier/flush), so the input that dismissed a pause,
 // confirmed a result, bought an item, chose Possession, or caused death cannot
-// also act — or restart a Run — in the destination state. Intents also carry
+// also act â€” or restart a Run â€” in the destination state. Intents also carry
 // the state scope they were created in; `consumeInputIntents()` only returns
 // intents created in the current scope, a second guard against leakage.
 
@@ -38,10 +38,10 @@
  */
 export const IntentType = Object.freeze({
   // Flight intents (consumed by the flight simulation in Active_Flight_State).
-  FLAP: "FLAP", // Normal_Flap — one per discrete press (Req 1.3, 1.5)
+  FLAP: "FLAP", // Normal_Flap â€” one per discrete press (Req 1.3, 1.5)
   FLIGHT_POWER: "FLIGHT_POWER", // Hover / Flight_Power activation (Req 1.7)
 
-  // UI intents (consumed by menus/HUD; never a flap — Req 1.6).
+  // UI intents (consumed by menus/HUD; never a flap â€” Req 1.6).
   UI_CONFIRM: "UI_CONFIRM", // confirm/dismiss (result, pause dismiss)
   UI_PAUSE: "UI_PAUSE", // request pause
   UI_RESUME: "UI_RESUME", // deliberate resume from pause/countdown
@@ -65,7 +65,7 @@ const POWER_SPIRITS = new Set(["storm_bat"]);
 
 /**
  * Whether the equipped Spirit provides an on-demand Flight_Power (Req 1.7,
- * 6.7). Pure — the shell/input layer calls this to decide whether a
+ * 6.7). Pure â€” the shell/input layer calls this to decide whether a
  * Flight_Power activation request should be routed to the flight sim at all. A
  * missing/absent value or `'none'` returns false so base Ghosty never fires a
  * power.
@@ -102,9 +102,9 @@ export function isUiIntent(type) {
 
 /**
  * Default keyboard mapping from physical keys (KeyboardEvent.code) to the game
- * intent they produce. Space flaps (Req 1.3–1.5); E activates the Flight_Power
+ * intent they produce. Space flaps (Req 1.3â€“1.5); E activates the Flight_Power
  * (Req 1.7); Escape/P request a pause; Enter confirms. The DOM shell uses this,
- * but the pure core is mapping-agnostic — callers pass intent kinds directly.
+ * but the pure core is mapping-agnostic â€” callers pass intent kinds directly.
  * @type {Readonly<Record<string, string>>}
  */
 export const DEFAULT_KEY_MAP = Object.freeze({
@@ -123,10 +123,12 @@ export const DEFAULT_KEY_MAP = Object.freeze({
   Digit2: { type: IntentType.UI_SELECT, index: 1 },
   Digit3: { type: IntentType.UI_SELECT, index: 2 },
   Digit4: { type: IntentType.UI_SELECT, index: 3 },
+  Digit5: { type: IntentType.UI_SELECT, index: 4 },
   Numpad1: { type: IntentType.UI_SELECT, index: 0 },
   Numpad2: { type: IntentType.UI_SELECT, index: 1 },
   Numpad3: { type: IntentType.UI_SELECT, index: 2 },
   Numpad4: { type: IntentType.UI_SELECT, index: 3 },
+  Numpad5: { type: IntentType.UI_SELECT, index: 4 },
 });
 
 /**
@@ -180,7 +182,7 @@ export function createInputQueue(options = {}) {
    */
   const held = new Map();
 
-  // Monotonic creation counter — a stable tiebreaker so intents created in the
+  // Monotonic creation counter â€” a stable tiebreaker so intents created in the
   // same millisecond keep their arrival order deterministically.
   let seq = 0;
 
@@ -222,7 +224,7 @@ export function createInputQueue(options = {}) {
      * Debounce is keyed by `extra.key` when supplied, otherwise by `type`. The
      * DOM shell passes the physical key code so that two different keys mapping
      * to the SAME intent kind (e.g. Digit1/Digit2 both producing UI_SELECT)
-     * debounce independently — pressing "2" right after "1" still registers.
+     * debounce independently â€” pressing "2" right after "1" still registers.
      * Flight intents keep the default (type) debounce, so the held-flap
      * property (Req 1.5) is unchanged.
      *
@@ -234,7 +236,7 @@ export function createInputQueue(options = {}) {
      */
     registerKeyDown(type, t, extra) {
       const debounceKey = (extra && extra.key) || type;
-      if (held.get(debounceKey)) return false; // still held — ignore auto-repeat
+      if (held.get(debounceKey)) return false; // still held â€” ignore auto-repeat
       held.set(debounceKey, true);
       enqueue(type, t, extra);
       return true;
@@ -254,7 +256,7 @@ export function createInputQueue(options = {}) {
 
     /**
      * Register a mouse click. A click inside the flight area is one Normal_Flap
-     * per click (Req 1.4) — clicks are inherently discrete, so no debounce
+     * per click (Req 1.4) â€” clicks are inherently discrete, so no debounce
      * latch is needed. A click outside the flight area (on a UI button) is
      * NEVER a flap (Req 1.6); pass the UI intent it activates via `type`.
      *
@@ -278,7 +280,7 @@ export function createInputQueue(options = {}) {
 
     /**
      * Register a UI action triggered by something other than a mapped key or a
-     * raw click position — e.g. an on-screen button handler. Always routed as a
+     * raw click position â€” e.g. an on-screen button handler. Always routed as a
      * UI intent and never a flap (Req 1.6). Guards against a flight intent kind
      * being passed in by mistake. An optional 0-based `index` is carried for a
      * UI_SELECT action (e.g. an on-screen battle-action button).
@@ -310,7 +312,7 @@ export function createInputQueue(options = {}) {
     },
 
     /**
-     * Set the current state scope WITHOUT flushing — used to initialize scope.
+     * Set the current state scope WITHOUT flushing â€” used to initialize scope.
      * Prefer {@link transition} at real state changes so the triggering input
      * is dropped.
      * @param {string} nextScope
@@ -356,7 +358,7 @@ export function createInputQueue(options = {}) {
 /**
  * Thin DOM shell: wire keyboard and mouse events on a target into a pure input
  * queue. This is the ONLY part of the module that touches the DOM, and it is
- * guarded so importing the module never requires a browser — if no usable
+ * guarded so importing the module never requires a browser â€” if no usable
  * target/window exists, it returns a no-op detacher.
  *
  * Flap routing (Req 1.4, 1.6): a `mousedown` is a flap only when it lands
@@ -371,7 +373,7 @@ export function createInputQueue(options = {}) {
  *   (defaults to the global `window` when present).
  * @param {HTMLCanvasElement|null} [options.canvas] the flight-area canvas to
  *   listen on for `mousedown`.
- * @param {Readonly<Record<string,string>>} [options.keyMap] key→intent map
+ * @param {Readonly<Record<string,string>>} [options.keyMap] keyâ†’intent map
  *   (defaults to {@link DEFAULT_KEY_MAP}).
  * @param {(ev: MouseEvent, canvas: HTMLCanvasElement) => boolean} [options.isInFlightArea]
  *   predicate deciding whether a canvas click counts as a flap. Defaults to
@@ -411,7 +413,7 @@ export function attachInput(queue, options = {}) {
     // Prevent the browser's default (Space scrolling the page) for mapped keys.
     if (typeof ev.preventDefault === "function") ev.preventDefault();
     // Debounce on the physical key code so keys sharing an intent kind (digits
-    // → UI_SELECT) latch independently.
+    // â†’ UI_SELECT) latch independently.
     queue.registerKeyDown(type, now(), { index, key: ev.code });
   }
 
@@ -468,13 +470,13 @@ export function attachInput(queue, options = {}) {
 
 /**
  * Thin DOM shell: wire a VISIBLE on-screen Flight_Power button to the input
- * queue (Req 1.7). This is the on-screen counterpart to the E key — a click on
+ * queue (Req 1.7). This is the on-screen counterpart to the E key â€” a click on
  * the button enqueues a {@link IntentType.FLIGHT_POWER} intent, exactly as the
  * key does, so the same downstream path (shell routing + activateHover's
  * cooldown gate) decides whether Hover actually activates.
  *
  * The button is a UI control OUTSIDE the flight area, so its click must never
- * be treated as a Normal_Flap (Req 1.6) — it is routed as a FLIGHT_POWER
+ * be treated as a Normal_Flap (Req 1.6) â€” it is routed as a FLIGHT_POWER
  * intent, never through the canvas flap path.
  *
  * Only-fires-when-powered (Req 1.7, 1.8): activation only makes sense while a
@@ -496,7 +498,7 @@ export function attachInput(queue, options = {}) {
  *   event drives it rather than a raw `mousedown`).
  * @param {() => boolean} [options.isPowerAvailable] predicate gating the
  *   button: return true only while a power-providing Spirit is equipped (and,
- *   if desired, its cooldown has elapsed — the cooldown is ALSO enforced
+ *   if desired, its cooldown has elapsed â€” the cooldown is ALSO enforced
  *   downstream, so this predicate may safely gate on equipped-Spirit alone).
  *   Defaults to always-available.
  * @param {() => number} [options.now] injectable clock (ms) for timestamps.
@@ -537,3 +539,4 @@ export function attachFlightPowerButton(queue, options = {}) {
 }
 
 export default createInputQueue;
+

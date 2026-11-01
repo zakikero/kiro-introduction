@@ -1,4 +1,4 @@
-// render.js — Canvas layer drawing (thin DOM/IO module).
+﻿// render.js â€” Canvas layer drawing (thin DOM/IO module).
 //
 // This is one of the few modules allowed to touch the DOM/Canvas. It holds no
 // gameplay state and never mutates the simulation: it reads the FSM state and
@@ -9,11 +9,11 @@
 //     position tweened between its committed previous (prevX/prevY) and current
 //     (x/y) CENTER coordinates using `alpha`. Collisions never read this value.
 //   - CENTER coordinates (structure / Req 12.10): Ghosty's x/y are the center
-//     of the logical body rect. The draw rect is center ± half the configured
-//     logical body size (≈32×39). The ghosty.png's natural pixel dimensions are
+//     of the logical body rect. The draw rect is center Â± half the configured
+//     logical body size (â‰ˆ32Ã—39). The ghosty.png's natural pixel dimensions are
 //     NEVER used as gameplay dimensions; the image is only fit (aspect
 //     preserved) inside that logical rect.
-//   - Letterboxed fit (Req 12.9): the fixed 960×640 Logical_Playfield is fit to
+//   - Letterboxed fit (Req 12.9): the fixed 960Ã—640 Logical_Playfield is fit to
 //     the canvas via a uniform scale + centering transform at DRAW TIME ONLY.
 //     Display scaling never changes physics or collision geometry.
 //   - Graceful degradation (Req 12.1): a missing/pending Ghosty sprite falls
@@ -34,44 +34,19 @@ import { drawShop } from "./ui/shop.js";
 import { resultsSummary, drawResults } from "./ui/results.js";
 import { drawMenu } from "./ui/menu.js";
 import { drawWardrobe } from "./ui/wardrobe.js";
+import {
+  resolveAppearance,
+  spriteDrawRect,
+  standaloneHatRect,
+  APPEARANCE_GEOMETRY,
+} from "./appearance.js";
+import { loadImage, imageReady, getImage, firstReady } from "./assets.js";
 
 /** Path to the provided Ghosty sprite, relative to index.html. */
-const GHOSTY_SPRITE_PATH = "assets/ghosty.png";
-
-// --- Ghosty sprite (guarded, lazy) ------------------------------------------
-
-/**
- * The Ghosty Image, or null until constructed. Load success/failure is tracked
- * so a pending or failed load cleanly falls back to the placeholder shape and
- * never throws or blocks the loop.
- * @type {HTMLImageElement|null}
- */
-let ghostyImage = null;
-let ghostyImageReady = false;
-let ghostyImageFailed = false;
-
-/**
- * Lazily construct and begin loading the Ghosty sprite. Guarded so a
- * non-browser import (no `Image`) simply leaves the placeholder path active.
- * @returns {void}
- */
-function ensureGhostySprite() {
-  if (ghostyImage || ghostyImageFailed) return;
-  if (typeof Image !== "function") return;
-  try {
-    const img = new Image();
-    img.addEventListener("load", () => {
-      ghostyImageReady = true;
-    });
-    img.addEventListener("error", () => {
-      ghostyImageFailed = true;
-    });
-    img.src = GHOSTY_SPRITE_PATH;
-    ghostyImage = img;
-  } catch {
-    ghostyImageFailed = true;
-  }
-}
+// Ghosty and all other sprites now load through the shared cached loader
+// (assets.js) and the appearance resolver (appearance.js); the legacy
+// `assets/ghosty.png` remains only as the final fallback in each resolved
+// fallback chain. No per-module image state lives here anymore.
 
 // --- FSM / RunState access helpers ------------------------------------------
 
@@ -149,7 +124,7 @@ const PALETTE = {
 // Soft illustrated placeholder colors for the four cosmetic Hats. These are
 // labeled placeholder shapes (Req 12.1) drawn ON TOP of Ghosty in the flight
 // entity layer; real hat art drops in later with no logic change. Hats are
-// purely cosmetic — nothing here reads or affects the Hitbox (steering).
+// purely cosmetic â€” nothing here reads or affects the Hitbox (steering).
 const HAT_STYLES = {
   witchHat: { body: "#2a0f4a", edge: "#b9a9e6", label: "Witch" },
   pumpkinCap: { body: "#ff8c2b", edge: "#a7613b", label: "Pumpkin" },
@@ -175,6 +150,27 @@ const SPIRIT_STYLES = {
  */
 function drawBackground(ctx, config) {
   const { width, height } = config.playfield;
+
+  // Prefer the illustrated background art (scaled to fill the logical
+  // playfield; it is 1536x1024, the same 3:2 ratio, so it fills exactly). The
+  // manifest warns not to draw a duplicate moon over it, so when the image is
+  // used we skip the procedural moon and return. A missing/pending image falls
+  // through to the gradient + moon placeholder (graceful degradation).
+  loadImage("background.png");
+  if (imageReady("background.png")) {
+    const bg = getImage("background.png");
+    if (bg) {
+      try {
+        ctx.drawImage(bg, 0, 0, width, height);
+        const groundH = Math.max(24, height * 0.06);
+        ctx.fillStyle = PALETTE.ground;
+        ctx.fillRect(0, height - groundH, width, groundH);
+        return;
+      } catch {
+        // fall through to the procedural backdrop
+      }
+    }
+  }
 
   // Sky gradient: purple-and-orange moonlit feel.
   const sky = ctx.createLinearGradient(0, 0, 0, height);
@@ -246,7 +242,7 @@ function roundedRectPath(ctx, x, y, w, h, r) {
  * @param {object[]} pipes
  * @param {object} config
  */
-function drawPipes(ctx, pipes, config) {
+function drawPipes(ctx, pipes, config, prefs = {}) {
   if (!Array.isArray(pipes) || pipes.length === 0) return;
   const { height } = config.playfield;
   const pw = config.pipe.width;
@@ -260,20 +256,107 @@ function drawPipes(ctx, pipes, config) {
     const gapTop = gapCenter - halfGap;
     const gapBottom = gapCenter + halfGap;
 
-    ctx.fillStyle = PALETTE.pipe;
-    ctx.strokeStyle = PALETTE.pipeEdge;
-    ctx.lineWidth = 3;
+    // Stable per-pipe variation from its id/x, NOT the gameplay RNG, so wood
+    // grain never affects spawner determinism (prompt §6).
+    const seed = pipeVisualSeed(pair);
 
-    // Top pillar: from the ceiling down to the gap top.
-    roundedRectPath(ctx, x, 0, pw, gapTop, 8);
-    ctx.fill();
-    ctx.stroke();
+    // Top pillar (ceiling -> gap top) and bottom pillar (gap bottom -> ground).
+    // All detail is clipped WITHIN the collision rect so nothing protrudes into
+    // the safe gap or creates a misleading apparent collision (prompt §6).
+    drawPipePillar(ctx, x, 0, pw, gapTop, seed, true, prefs);
+    drawPipePillar(ctx, x, gapBottom, pw, height - gapBottom, seed + 97, false, prefs);
+  }
+}
 
-    // Bottom pillar: from the gap bottom down to the ground.
-    roundedRectPath(ctx, x, gapBottom, pw, height - gapBottom, 8);
-    ctx.fill();
+/** Stable integer visual seed for a pipe (never the gameplay RNG). */
+function pipeVisualSeed(pair) {
+  if (typeof pair.id === "number") return (pair.id * 2654435761) >>> 0;
+  const x = typeof pair.x === "number" ? Math.round(pair.x) : 0;
+  return (x * 40503 + 12345) >>> 0;
+}
+
+/** Tiny deterministic 0..1 PRNG from a seed (visual detail only). */
+function vrand(seed) {
+  let s = (seed >>> 0) || 1;
+  s ^= s << 13; s >>>= 0;
+  s ^= s >> 17;
+  s ^= s << 5; s >>>= 0;
+  return (s % 100000) / 100000;
+}
+
+/**
+ * Draw one haunted-wooden pillar fully inside its collision rect [x,y,w,h].
+ * Layered shading + restrained grain + inset bands + a carved detail + a
+ * gap-facing cap with a strong edge. Everything is clipped to the rect so the
+ * safe opening stays obvious and no ornament reaches into the gap (prompt §6).
+ */
+function drawPipePillar(ctx, x, y, w, h, seed, capAtBottom, prefs) {
+  if (h <= 0) return;
+  const r = 8;
+  ctx.save();
+  // Clip to the collision rect so no detail can spill into the safe path.
+  roundedRectPath(ctx, x, y, w, h, r);
+  ctx.clip();
+
+  // Base wood with a vertical light-to-dark shade for soft volume.
+  const grad = ctx.createLinearGradient(x, 0, x + w, 0);
+  grad.addColorStop(0, "#7a4a30");
+  grad.addColorStop(0.5, PALETTE.pipe);
+  grad.addColorStop(1, "#4f2e1e");
+  ctx.fillStyle = grad;
+  ctx.fillRect(x, y, w, h);
+
+  // Restrained vertical grain lines (cached-cheap, deterministic).
+  ctx.strokeStyle = "rgba(40, 22, 12, 0.35)";
+  ctx.lineWidth = 1;
+  const lines = 3;
+  for (let i = 1; i <= lines; i += 1) {
+    const gx = x + (w * i) / (lines + 1) + (vrand(seed + i) - 0.5) * 4;
+    ctx.beginPath();
+    ctx.moveTo(gx, y + 2);
+    ctx.lineTo(gx, y + h - 2);
     ctx.stroke();
   }
+
+  // Inset bands across the pillar for a carved, banded look.
+  ctx.fillStyle = "rgba(167, 97, 59, 0.5)";
+  const bandSpacing = 46;
+  for (let by = y + 24; by < y + h - 10; by += bandSpacing) {
+    ctx.fillRect(x + 3, by, w - 6, 5);
+  }
+
+  // A small carved detail (moon / rune / pumpkin) chosen stably per pillar.
+  const motif = Math.floor(vrand(seed + 7) * 3);
+  const mx = x + w / 2;
+  const my = capAtBottom ? y + 22 : y + h - 22;
+  ctx.fillStyle = "rgba(255, 220, 150, 0.6)";
+  ctx.strokeStyle = "rgba(255, 220, 150, 0.6)";
+  if (motif === 0) {
+    ctx.beginPath(); ctx.arc(mx, my, 7, 0, Math.PI * 2); ctx.fill();
+  } else if (motif === 1) {
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(mx - 6, my - 6); ctx.lineTo(mx + 6, my + 6);
+    ctx.moveTo(mx + 6, my - 6); ctx.lineTo(mx - 6, my + 6); ctx.stroke();
+  } else {
+    ctx.beginPath(); ctx.ellipse(mx, my, 7, 6, 0, 0, Math.PI * 2); ctx.fill();
+  }
+
+  ctx.restore();
+
+  // Gap-facing cap + strong readable outline (drawn un-clipped but still inside
+  // the rect bounds), so the obstacle family reads as one and the gap edge is
+  // unmistakable. The cap height is modest and stays within the rect.
+  ctx.save();
+  ctx.fillStyle = PALETTE.pipeEdge;
+  const capH = Math.min(14, h);
+  const capY = capAtBottom ? y : y + h - capH;
+  roundedRectPath(ctx, x - 1, capY, w + 2, capH, 6);
+  ctx.fill();
+  ctx.strokeStyle = "#3a2112";
+  ctx.lineWidth = 2;
+  roundedRectPath(ctx, x, y, w, h, r);
+  ctx.stroke();
+  ctx.restore();
 }
 
 /**
@@ -298,15 +381,45 @@ function drawSymbols(ctx, symbols, config) {
     const isShop = s.kind === "shop";
 
     ctx.save();
-    // Soft illustrated token: a rounded body tinted by kind.
-    ctx.fillStyle = isShop
-      ? "rgba(255, 179, 71, 0.85)"
-      : "rgba(201, 138, 223, 0.9)";
-    ctx.strokeStyle = isShop ? "#a7613b" : "#7a3f98";
-    ctx.lineWidth = 2;
-    roundedRectPath(ctx, left, top, s.w, s.h, 10);
-    ctx.fill();
-    ctx.stroke();
+
+    // Prefer the real illustrated sprite (aspect-preserved into the symbol body
+    // rect). Missing/pending art falls back to the rounded token placeholder so
+    // the opportunity is always visible pre-contact (Req 4.6, 12.1).
+    const spriteFile = isShop
+      ? "shop.png"
+      : s.enemyType === "B"
+        ? "enemy_pumpkin_guardian.png"
+        : "enemy_storm_bat.png";
+    loadImage(spriteFile);
+    let spriteDrawn = false;
+    if (imageReady(spriteFile)) {
+      const img = getImage(spriteFile);
+      if (img) {
+        const natW = img.naturalWidth || img.width || s.w;
+        const natH = img.naturalHeight || img.height || s.h;
+        const fit = Math.min(s.w / natW, s.h / natH);
+        const dw = natW * fit;
+        const dh = natH * fit;
+        try {
+          ctx.drawImage(img, s.x - dw / 2, s.y - dh / 2, dw, dh);
+          spriteDrawn = true;
+        } catch {
+          spriteDrawn = false;
+        }
+      }
+    }
+
+    if (!spriteDrawn) {
+      // Soft illustrated token: a rounded body tinted by kind.
+      ctx.fillStyle = isShop
+        ? "rgba(255, 179, 71, 0.85)"
+        : "rgba(201, 138, 223, 0.9)";
+      ctx.strokeStyle = isShop ? "#a7613b" : "#7a3f98";
+      ctx.lineWidth = 2;
+      roundedRectPath(ctx, left, top, s.w, s.h, 10);
+      ctx.fill();
+      ctx.stroke();
+    }
 
     // Pre-contact label (identity / shop tag), drawn above the token.
     ctx.fillStyle = "#efe6ff";
@@ -336,7 +449,7 @@ function drawSymbols(ctx, symbols, config) {
  * soft-ghost placeholder is drawn instead. Never uses the PNG's native size as
  * gameplay dimensions.
  *
- * Cosmetics (purely visual, never touching the Hitbox — steering/Req 3): the
+ * Cosmetics (purely visual, never touching the Hitbox â€” steering/Req 3): the
  * equipped Spirit (if any) draws a soft aura BEHIND Ghosty so possession reads
  * in flight, and the equipped Hat (if any) draws a labeled placeholder shape ON
  * TOP so it stays visible across every appearance. Both are drawn relative to
@@ -360,45 +473,106 @@ function drawGhosty(ctx, ghosty, alpha, config, cosmetics = {}) {
   const cx = prevX + (ghosty.x - prevX) * a;
   const cy = prevY + (ghosty.y - prevY) * a;
 
-  // Logical body rect = center ± half the configured body size.
+  // Logical body rect = center Â± half the configured body size.
   const bw = config.ghosty.bodyWidth;
   const bh = config.ghosty.bodyHeight;
   const left = cx - bw / 2;
   const top = cy - bh / 2;
 
-  // Spirit aura first, so it sits BEHIND the body/sprite (cosmetic only).
-  drawSpiritAura(ctx, cx, cy, bw, bh, cosmetics && cosmetics.spirit);
+  // Resolve the whole-sprite appearance (shared with wardrobe/menu/battle).
+  // The resolver maps the saved hat + transient spirit to the body sprite (and
+  // optional standalone hat on a possessed body); the loader decides which of
+  // the fallback chain is actually ready. Cosmetics never touch the hitbox.
+  const plan = resolveAppearance(
+    cosmetics && cosmetics.hat,
+    cosmetics && cosmetics.spirit,
+  );
 
-  ensureGhostySprite();
+  // Kick off loads for the primary body + any standalone hat (idempotent).
+  for (const layer of plan.layers) {
+    for (const f of layer.fallbacks) loadImage(f);
+  }
+
+  const bodyFile = firstReady(plan.bodyFallbacks);
+  const bodyMeta = bodyFile && APPEARANCE_GEOMETRY.bodyReference[bodyFile];
 
   let drawn = false;
-  if (ghostyImage && ghostyImageReady && !ghostyImageFailed) {
-    // Fit the sprite inside the body rect, preserving its aspect ratio — never
-    // scaling to the PNG's natural pixel dimensions as gameplay size.
-    const natW = ghostyImage.naturalWidth || ghostyImage.width || bw;
-    const natH = ghostyImage.naturalHeight || ghostyImage.height || bh;
-    const fit = Math.min(bw / natW, bh / natH);
-    const drawW = natW * fit;
-    const drawH = natH * fit;
-    const drawX = cx - drawW / 2;
-    const drawY = cy - drawH / 2;
-    try {
-      ctx.drawImage(ghostyImage, drawX, drawY, drawW, drawH);
-      drawn = true;
-    } catch {
-      // Fall through to the placeholder if drawImage throws for any reason.
+  if (bodyFile && bodyMeta) {
+    // Align the sprite's BODY REFERENCE to the logical body box so a tall hat
+    // never resizes Ghosty (prompt §3). The hitbox is unchanged regardless.
+    const rect = spriteDrawRect(bodyFile, cx, cy, bw, bh);
+    const img = getImage(bodyFile);
+    if (rect && img) {
+      try {
+        ctx.drawImage(img, rect.dx, rect.dy, rect.dw, rect.dh);
+        drawn = true;
+        // On a possessed body, layer exactly one standalone hat (if equipped).
+        if (plan.possessed && plan.standaloneHatFile && imageReady(plan.standaloneHatFile)) {
+          const hatRect = standaloneHatRect(
+            plan.standaloneHatFile, bodyFile, rect, bodyMeta, bw,
+          );
+          const hatImg = getImage(plan.standaloneHatFile);
+          if (hatRect && hatImg) {
+            ctx.drawImage(hatImg, hatRect.dx, hatRect.dy, hatRect.dw, hatRect.dh);
+          }
+        }
+      } catch {
+        drawn = false;
+      }
     }
   }
 
   if (!drawn) {
-    // Labeled placeholder: a soft rounded ghost silhouette in the illustrated
-    // Halloween style. Missing art must never block the loop (Req 12.1).
+    // No real art ready yet: soft aura for possession + labeled placeholder +
+    // placeholder hat, so the loop is fully playable before art loads (Req 12.1).
+    drawSpiritAura(ctx, cx, cy, bw, bh, cosmetics && cosmetics.spirit);
     drawGhostyPlaceholder(ctx, left, top, bw, bh);
+    drawHat(ctx, cx, top, bw, cosmetics && cosmetics.hat);
   }
+}
 
-  // Hat last, so the cosmetic sits ON TOP and is never hidden by the possessed
-  // look (steering: hats stay visible across every spirit appearance).
-  drawHat(ctx, cx, top, bw, cosmetics && cosmetics.hat);
+/**
+ * Draw a large, STATIC Ghosty preview centered at (cx, cy) with the given
+ * target body width, wearing hat and optionally possessed by spirit. Shares
+ * the appearance resolver + loader with flight/battle so the preview can never
+ * disagree with the in-game look (prompt §2, §3). Falls back to the labeled
+ * placeholder when art is not ready. Purely presentational; touches no state.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} cx preview center x (logical coords)
+ * @param {number} cy preview center y
+ * @param {number} bodyW target optical body width in logical px
+ * @param {string|null} hat the hat id to preview
+ * @param {string|null} spirit optional spirit id to preview
+ */
+export function drawGhostyPreview(ctx, cx, cy, bodyW, hat, spirit) {
+  if (!ctx || typeof ctx.drawImage !== "function") return;
+  const bodyH = bodyW * (39 / 32);
+  const plan = resolveAppearance(hat, spirit);
+  for (const layer of plan.layers) for (const f of layer.fallbacks) loadImage(f);
+  const bodyFile = firstReady(plan.bodyFallbacks);
+  const bodyMeta = bodyFile && APPEARANCE_GEOMETRY.bodyReference[bodyFile];
+  if (bodyFile && bodyMeta) {
+    const rect = spriteDrawRect(bodyFile, cx, cy, bodyW, bodyH);
+    const img = getImage(bodyFile);
+    if (rect && img) {
+      try {
+        ctx.drawImage(img, rect.dx, rect.dy, rect.dw, rect.dh);
+        if (plan.possessed && plan.standaloneHatFile && imageReady(plan.standaloneHatFile)) {
+          const hatRect = standaloneHatRect(plan.standaloneHatFile, bodyFile, rect, bodyMeta, bodyW);
+          const hatImg = getImage(plan.standaloneHatFile);
+          if (hatRect && hatImg) ctx.drawImage(hatImg, hatRect.dx, hatRect.dy, hatRect.dw, hatRect.dh);
+        }
+        return;
+      } catch {
+        // fall through to placeholder
+      }
+    }
+  }
+  // Placeholder preview.
+  drawSpiritAura(ctx, cx, cy, bodyW, bodyH, spirit);
+  drawGhostyPlaceholder(ctx, cx - bodyW / 2, cy - bodyH / 2, bodyW, bodyH);
+  drawHat(ctx, cx, cy - bodyH / 2, bodyW, hat);
 }
 
 /**
@@ -458,7 +632,7 @@ function drawHat(ctx, cx, top, bw, hat) {
   ctx.fill();
   ctx.stroke();
 
-  // Crown/cone — a simple pointed shape stands in for every hat; the per-hat
+  // Crown/cone â€” a simple pointed shape stands in for every hat; the per-hat
   // color and label make them distinguishable until real art arrives.
   ctx.beginPath();
   ctx.moveTo(cx - bw * 0.35, brimY);
@@ -591,6 +765,15 @@ export function createRenderer(canvas, options = {}) {
     return { reducedMotion: Boolean(p && p.reducedMotion) };
   }
 
+  /** @returns {string|null} the hat id previewed in the Wardrobe, or null */
+  function currentPreview() {
+    let p = previewSource;
+    if (typeof previewSource === "function") {
+      try { p = previewSource(); } catch { p = null; }
+    }
+    return typeof p === "string" ? p : null;
+  }
+
   /** @returns {object|null} the current SaveData (for the Results total Candy) */
   function currentSave() {
     let s = saveSource;
@@ -623,6 +806,7 @@ export function createRenderer(canvas, options = {}) {
       currentPrefs(),
       currentSave(),
       currentFeedback(),
+      currentPreview(),
     );
   };
 }
@@ -653,6 +837,7 @@ export function renderToContext(
   prefs = {},
   save = null,
   feedback = null,
+  previewHat = null,
 ) {
   if (!ctx) return;
 
@@ -689,7 +874,7 @@ export function renderToContext(
     // is read from the live RunState and the equipped Hat from SaveData; neither
     // touches gameplay or the Hitbox.
     drawBackground(ctx, config);
-    drawPipes(ctx, runState.pipes, config);
+    drawPipes(ctx, runState.pipes, config, prefs);
     drawSymbols(ctx, runState.symbols, config);
     drawGhosty(ctx, runState.ghosty, alpha, config, {
       spirit: runState.equippedSpirit || null,
@@ -699,9 +884,9 @@ export function renderToContext(
     });
     drawEffects(ctx, runState, config, prefs);
   } else if (stateName === States.Battle_State && runState) {
-    // Dedicated battle scene (Req 5.21–5.23), drawn SEPARATELY from the frozen
+    // Dedicated battle scene (Req 5.21â€“5.23), drawn SEPARATELY from the frozen
     // flight world. The live battle is carried on the RunState by the shell.
-    drawBattle(ctx, runState, runState.activeBattle, config);
+    drawBattle(ctx, runState, runState.activeBattle, config, save);
   } else if (stateName === States.Shop_State && runState) {
     // In-run shop view (Req 7.5): effect/price/quantity/affordability + potion.
     drawShop(ctx, runState, config);
@@ -722,16 +907,24 @@ export function renderToContext(
     drawResults(ctx, resultsSummary(runState, save, config), config);
   } else if (stateName === States.Wardrobe) {
     // Wardrobe (Req 8.8, 8.11): the cosmetic Hat shop, reachable only OUTSIDE a
-    // Run (from the menu/results). Reads the persistent SaveData — Candy,
-    // owned/equipped Hats — and never touches a RunState. drawWardrobe paints
+    // Run (from the menu/results). Reads the persistent SaveData â€” Candy,
+    // owned/equipped Hats â€” and never touches a RunState. drawWardrobe paints
     // its own backdrop, so no separate background is needed.
     drawWardrobe(ctx, save, config);
+    // A large LIVE preview of Ghosty wearing the SELECTED hat (prompt §2): the
+    // previewed hat (overlay selection) is distinct from the equipped one. No
+    // spirit in the wardrobe (meta screen, outside a Run), so this previews the
+    // whole swappable sprite for the chosen hat.
+    const previewId =
+      typeof previewHat === "string" ? previewHat : (save && save.equippedHat) || "none";
+    drawGhostyPreview(ctx, logicalW * 0.5, logicalH * 0.52, 120, previewId, null);
   } else if (stateName === States.Main_Menu_State) {
     // Main Menu (Req 10.4): title + saved high score over the soft backdrop.
     // The Export/Import affordances live in index.html's DOM chrome (exposed
     // only outside a Run by the shell), so the canvas view stays to the title.
     drawBackground(ctx, config);
     drawMenu(ctx, save, config);
+    drawGhostyPreview(ctx, logicalW * 0.5, logicalH * 0.7, 90, (save && save.equippedHat) || "none", null);
   } else {
     // Any other non-run state: the soft title backdrop.
     drawTitleScreen(ctx, config);
@@ -747,7 +940,7 @@ export function renderToContext(
     drawHud(ctx, runState, config, {
       save,
       feedback,
-      // Wall-clock seconds for feedback aging only — NOT a simulation clock, so
+      // Wall-clock seconds for feedback aging only â€” NOT a simulation clock, so
       // it never affects physics, collisions, or the three-clock rule.
       now:
         typeof performance !== "undefined" &&
@@ -789,3 +982,14 @@ export default {
   computeLetterbox,
   PLACEHOLDER_ART,
 };
+
+
+
+
+
+
+
+
+
+
+

@@ -1,10 +1,10 @@
-# Kiro’s Haunted Flight
+﻿# Kiroâ€™s Haunted Flight
 
 A Halloween flying adventure that combines Flappy-style obstacle navigation with turn-based battles, enemy possession, shops, and collectible ghost hats.
 
 You play as **Ghosty**, a friendly ghost trying to survive a haunted flight and defeat the final boss. Each run offers temporary powers and upgrades; Candy earned at the end carries over toward permanent cosmetic unlocks.
 
-Built with Kiro through a requirements → design → tasks workflow. The game runs locally in a desktop browser with plain JavaScript and HTML5 Canvas. No backend, account, AWS deployment, or runtime AI API is needed.
+Built with Kiro through a requirements â†’ design â†’ tasks workflow. The game runs locally in a desktop browser with plain JavaScript and HTML5 Canvas. No backend, account, AWS deployment, or runtime AI API is needed.
 
 <img src="assets/ghosty_base.png" alt="Ghosty character artwork: a floating white ghost with black oval eyes" width="160">
 
@@ -30,10 +30,10 @@ Serve the project over HTTP rather than opening `index.html` directly: browsers 
 
 ## How the adventure works
 
-1. **Fly through the gaps.** Press Space or click the playfield to rise; gravity pulls Ghosty down between flaps. Each passed pipe pair adds to the run’s Pipe Score.
-2. **Choose encounters.** Fly into an enemy symbol to enter a short turn-based battle, or avoid it and continue flying. Ordinary victories award Soul Coins and offer the defeated enemy’s spirit.
-3. **Possess a spirit.** Accept the offer to gain that spirit’s flight benefit and combat move. Only one spirit can be equipped at a time; accepting another replaces the current one.
-4. **Visit shops.** Shop entrances lead to potions, shields, and an attack upgrade bought with the run’s Soul Coins. Purchase logic exists; the player-facing controls are still part of the UI refinement.
+1. **Fly through the gaps.** Press Space or click the playfield to rise; gravity pulls Ghosty down between flaps. Each passed pipe pair adds to the runâ€™s Pipe Score.
+2. **Choose encounters.** Fly into an enemy symbol to enter a short turn-based battle, or avoid it and continue flying. Ordinary victories award Soul Coins and offer the defeated enemyâ€™s spirit.
+3. **Possess a spirit.** Accept the offer to gain that spiritâ€™s flight benefit and combat move. Only one spirit can be equipped at a time; accepting another replaces the current one.
+4. **Visit shops.** Shop entrances lead to potions, shields, and an attack upgrade bought with the runâ€™s Soul Coins. Purchase logic exists; the player-facing controls are still part of the UI refinement.
 5. **Face the boss.** The mandatory final boss arrives after 120 seconds of active flight. Defeat it to win the adventure; running out of Battle HP or suffering a fatal flight collision ends the run.
 6. **Earn Candy.** A completed run awards permanent Candy based on flight time, with a bonus for boss victory. The wardrobe uses Candy to unlock hats.
 
@@ -70,11 +70,11 @@ These are the controls currently routed by the application. Number keys also sup
 | Battle | **1** Attack, **2** Defend, **3** Use Item, **4** equipped spirit move; Enter/Space/click defaults to Attack |
 | Battle outcome | **Enter / Space / click** continues after victory or defeat |
 | Possession offer | **1** accepts/replaces the spirit; **2** declines; Enter/Space/click accepts |
-| Shop | **Enter / Space / click** leaves; purchase and potion-use controls still need UI wiring |
+| Shop | **Enter / Space / click** leaves; number keys / on-screen controls buy items and use potions |
 | Results | **1** Restart, **2** Main Menu, **3** Wardrobe; Enter/Space/click defaults to Restart |
-| Wardrobe | **Escape / Enter / Space / click** returns to Main Menu; selection, Buy, and Equip controls are pending |
+| Wardrobe | Click a card (or **1**–**5**) to preview; on-screen **Buy** / **Equip** / **Back** buttons act; **Escape** returns to Main Menu |
 
-Mute and Reduced Motion checkboxes are available below the playfield. Losing browser focus pauses active flight.
+Mute, Reduced Motion, Export/Import, and Fullscreen controls live in the Main Menu's Progress & Settings section. Losing browser focus pauses active flight.
 
 ## Combat, spirits, and shop items
 
@@ -106,25 +106,25 @@ These are the current values in [src/config.js](src/config.js), which is the sou
 Candy is awarded once per completed run:
 
 ```text
-Candy = floor(active flight seconds / 15) + 3 if the boss was defeated
+Candy = floor(activeFlightTime / 15) + (bossDefeated ? 3 : 0)
 ```
 
 A run ending before 15 seconds earns no time-based Candy. Defeat and deliberately ending a started run still award the Candy earned so far.
 
-The wardrobe catalog contains **No Hat** for free, **Witch Hat** for 3 Candy, **Pumpkin Cap** for 6, **Bat Bonnet** for 10, and **Haunted Crown** for 15. Ownership, equipped hat, and Candy persist; buying/equipping through normal visible controls is still being connected.
+The wardrobe catalog contains **No Hat** for free, **Witch Hat** for 3 Candy, **Pumpkin Cap** for 6, **Bat Bonnet** for 10, and **Haunted Crown** for 15. Ownership, equipped hat, and Candy persist, and buying/equipping use the Wardrobe's visible controls (selecting a card only previews; buying never auto-equips).
 
 Progress is stored in browser `localStorage`:
 
 - High score, Candy, owned/equipped hats, and mute/reduced-motion preferences are saved.
 - An unfinished run is not saved or resumed.
 - Browser profiles, hostnames, and ports have separate storage. Use the same address to keep seeing the same progress.
-- Portable JSON export/import helpers exist, but their visible controls are pending. Imports validate a replacement save rather than merging two players’ progress.
+- Portable JSON export/import helpers exist, but their visible controls are pending. Imports validate a replacement save rather than merging two playersâ€™ progress.
 
-The internal save key is `flappy-kiro:save` and the export filename is `flappy-kiro-save.json`. These legacy identifiers are intentional compatibility names; the displayed game title is **Kiro’s Haunted Flight**.
+The internal save key is `flappy-kiro:save` and the export filename is `flappy-kiro-save.json`. These legacy identifiers are intentional compatibility names; the displayed game title is **Kiroâ€™s Haunted Flight**.
 
 ## Current implementation status
 
-The core flight, encounters, combat, possession, boss, economy, and save logic are implemented. **Some player-facing features remain incomplete even where their underlying logic is tested.**
+The core flight, encounters, combat, possession, boss, economy, and save logic are implemented, and the wardrobe/visual/audio refinement (interactive menus, runtime sprite swapping, larger display + fullscreen, detailed pipes, and event audio) is now wired in. **A browser pass is still recommended** to confirm pointer alignment, fullscreen, audio, and optical sprite registration, since the headless suite cannot see the rendered frame.
 
 | Area | Current status |
 |---|---|
@@ -136,7 +136,7 @@ The core flight, encounters, combat, possession, boss, economy, and save logic a
 | Menus and display | Clear action buttons, larger desktop display, fullscreen, and detailed pipes are specified in the refinement prompt |
 | Portable saves | Validation and export/import helpers exist; player-facing file controls are pending |
 
-The browser shell currently loads the original ghost sprite and flap/game-over sounds. New asset and appearance modules are being added, but the presence of an asset file or helper function alone does not mean its visible flow is complete.
+Asset integration is underway through the shared loading and appearance modules. Visible behavior depends on the connected rendering, controls, and audio-event paths; the presence of an asset file or helper function alone does not mean its player-facing flow is complete. Verify these flows in a browser as the refinement progresses.
 
 The next implementation handoff is [the wardrobe and visual polish prompt](docs/KIRO_WARDROBE_AND_VISUAL_POLISH_PROMPT.md). The milestone checklist records implementation work; use actual browser verification to confirm player-facing completion.
 
@@ -161,8 +161,8 @@ The application separates gameplay rules from browser input, drawing, audio, and
 ### Architecture rules
 
 - Simulation advances at **120 fixed steps per second**. Long frames are clamped to 0.1 seconds; interpolation affects drawing only.
-- The world uses a **960 × 640 logical playfield**. Display scaling must not change gameplay coordinates or difficulty.
-- Ghosty’s position uses center coordinates. Its logical body is **32 × 39**, with a **24 × 31** collision hitbox independent of PNG size, hats, or spirit decorations.
+- The world uses a **960 Ã— 640 logical playfield**. Display scaling must not change gameplay coordinates or difficulty.
+- Ghostyâ€™s position uses center coordinates. Its logical body is **32 Ã— 39**, with a **24 Ã— 31** collision hitbox independent of PNG size, hats, or spirit decorations.
 - Gameplay systems operate on plain state and are tested independently of browser rendering.
 - Flight time, resume countdown, and turn-based combat use separate clocks.
 - Safe encounter returns and ordinary pause intentionally use different resume behavior.
@@ -181,23 +181,23 @@ npm test
 node --test test/flight.test.js
 ```
 
-Tests use Node’s built-in `node:test` runner, `node:assert/strict`, and `fast-check`. Property tests run at least 100 generated cases and use the feature tag `flappy-kiro`.
+Tests use Nodeâ€™s built-in `node:test` runner, `node:assert/strict`, and `fast-check`. Property tests run at least 100 generated cases and use the feature tag `flappy-kiro`.
 
 Coverage includes physics, obstacle generation, collision/shield behavior, safe checkpoints, pause, combat and the boss action sequence, spirit cooldowns, economy, Candy finalization, save validation/round trips, and presentation helpers. These are headless tests; passing them does not replace mouse/keyboard, audio, resize, or visual checks in a browser.
 
 ## Assets and Kiro documents
 
-The local media bundle contains **18 PNGs, 11 WAVs, and one MP3**, including Ghosty’s five normal appearances, two spirit forms, enemies, boss, standalone hats, shop, backgrounds, and sound effects.
+The local media bundle contains **18 PNGs, 11 WAVs, and one MP3**, including Ghostyâ€™s five normal appearances, two spirit forms, enemies, boss, standalone hats, shop, backgrounds, and sound effects.
 
-- [Asset preview](assets/preview.html) — view it locally at [http://127.0.0.1:8177/assets/preview.html](http://127.0.0.1:8177/assets/preview.html).
-- [Asset integration notes](assets/README.md) — whole-sprite versus overlay rules and audio lifecycle.
-- [Asset manifest](assets/manifest.json) — filename/id mappings, source dimensions, approximate body/hat anchors, and checksums.
-- [Generation prompts](assets/generation_prompts.json) and [earlier pack prompts](assets/source_generation_prompts.json) — artwork provenance.
-- [Requirements](.kiro/specs/flappy-kiro/requirements.md) — what the game should do.
-- [Design](.kiro/specs/flappy-kiro/design.md) — architecture, contracts, and test properties.
-- [Tasks](.kiro/specs/flappy-kiro/tasks.md) — six milestones: flight core, encounter loop, possession, final boss, progression/saves, and presentation.
-- [Steering](.kiro/steering) — product scope, stack, structure, gameplay invariants, and visual/audio direction.
-- [Wardrobe and visual polish prompt](docs/KIRO_WARDROBE_AND_VISUAL_POLISH_PROMPT.md) — detailed implementation requirements for the next refinement.
+- [Asset preview](assets/preview.html) â€” view it locally at [http://127.0.0.1:8177/assets/preview.html](http://127.0.0.1:8177/assets/preview.html).
+- [Asset integration notes](assets/README.md) â€” whole-sprite versus overlay rules and audio lifecycle.
+- [Asset manifest](assets/manifest.json) â€” filename/id mappings, source dimensions, approximate body/hat anchors, and checksums.
+- [Generation prompts](assets/generation_prompts.json) and [earlier pack prompts](assets/source_generation_prompts.json) â€” artwork provenance.
+- [Requirements](.kiro/specs/flappy-kiro/requirements.md) â€” what the game should do.
+- [Design](.kiro/specs/flappy-kiro/design.md) â€” architecture, contracts, and test properties.
+- [Tasks](.kiro/specs/flappy-kiro/tasks.md) â€” six milestones: flight core, encounter loop, possession, final boss, progression/saves, and presentation.
+- [Steering](.kiro/steering) â€” product scope, stack, structure, gameplay invariants, and visual/audio direction.
+- [Wardrobe and visual polish prompt](docs/KIRO_WARDROBE_AND_VISUAL_POLISH_PROMPT.md) â€” detailed implementation requirements for the next refinement.
 
 Adventure mode and desktop keyboard/mouse play are the current scope. Endless mode, mobile-first controls, cloud accounts/sync, multiplayer, and runtime AI calls are outside the first release.
 
@@ -211,4 +211,6 @@ Adventure mode and desktop keyboard/mouse play are the current scope. Endless mo
 
 ## License
 
-See [LICENCE.md](LICENCE.md) for the repository’s **MIT No Attribution (MIT-0)** license.
+See [LICENCE.md](LICENCE.md) for the repositoryâ€™s **MIT No Attribution (MIT-0)** license.
+
+
